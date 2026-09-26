@@ -285,7 +285,8 @@
         }
 
         function carregarListaSimulados() {
-            let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1", "2", "3", "4", "5"]');
+            let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1"]');
+            if (!simuladosSalvos || simuladosSalvos.length === 0) simuladosSalvos = ["1"];
             const select = document.getElementById("select-edicao-simulado");
             select.innerHTML = "";
             simuladosSalvos.forEach(s => {
@@ -299,17 +300,21 @@
         }
 
         function adicionarNovoSimulado() {
-            let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1", "2", "3", "4", "5"]');
-            let proximo = String(Math.max(...simuladosSalvos.map(Number)) + 1);
-            simuladosSalvos.push(proximo);
+            let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1"]');
+            if (!simuladosSalvos || simuladosSalvos.length === 0) {
+                simuladosSalvos = ["1"];
+            } else {
+                let proximo = String(Math.max(...simuladosSalvos.map(Number)) + 1);
+                simuladosSalvos.push(proximo);
+            }
             localStorage.setItem("lista_simulados_cadastrados", JSON.stringify(simuladosSalvos));
-            simAtual = proximo;
+            simAtual = simuladosSalvos[simuladosSalvos.length - 1];
             carregarListaSimulados();
             mudarEdicaoSimulado();
         }
 
         function excluirSimuladoAtual() {
-            let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1", "2", "3", "4", "5"]');
+            let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1"]');
             
             if(confirm(`Tem certeza que deseja excluir o ${simAtual}º Simulado e todos os seus dados?`)) {
                 localStorage.removeItem(`dados_1dia_sim${simAtual}`);
@@ -319,7 +324,7 @@
                 
                 simuladosSalvos = simuladosSalvos.filter(s => s !== simAtual);
                 
-                // Se zerar a lista, recria o "1" automaticamente para manter a integridade
+                // Se a lista zerar, reseta obrigatoriamente para o 1º Simulado
                 if (simuladosSalvos.length === 0) {
                     simuladosSalvos = ["1"];
                 }
