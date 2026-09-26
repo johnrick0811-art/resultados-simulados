@@ -8,6 +8,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Biblioteca do Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         details summary::-webkit-details-marker { display: none; }
         details[open] summary .seta-gaveta { transform: rotate(180deg); }
@@ -18,8 +20,8 @@
     <div class="max-w-6xl mx-auto bg-white p-8 rounded-xl shadow-lg mb-8">
         <header class="flex flex-col md:flex-row justify-between items-center mb-8 border-b pb-4 gap-4">
             <div>
-                <h1 class="text-2xl font-bold text-blue-600">🛠️ Painel do Desenvolvedor & Automação GitHub</h1>
-                <p class="text-xs text-gray-500 mt-1">Gerencie múltiplos simulados, controle dados e publique diretamente para os alunos.</p>
+                <h1 class="text-2xl font-bold text-blue-600">🛠️ Painel do Desenvolvedor & Nuvem Supabase</h1>
+                <p class="text-xs text-gray-500 mt-1">Gerencie múltiplos simulados e publique instantaneamente para os alunos.</p>
             </div>
             <div class="flex items-center space-x-3 flex-wrap gap-2">
                 <button onclick="abrirModalTRI()" class="bg-indigo-600 text-white px-3 py-2 rounded-lg font-semibold text-xs hover:bg-indigo-700 transition shadow">⚙️ Laboratório TRI</button>
@@ -34,21 +36,11 @@
         <!-- INDICADOR DISCRETO DE VERSÃO ATUAL NO PAINEL -->
         <div class="bg-blue-50 border border-blue-200 p-3 rounded-xl mb-6 flex justify-between items-center text-xs">
             <div class="flex items-center space-x-2">
-                <span class="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block animate-pulse"></span>
-                <span class="font-bold text-blue-900">Versão de Sistema Ativa:</span>
-                <span id="dev-versao-sistema" class="font-mono bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-700 font-semibold">v2.6 (Aguardando Deploy)</span>
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                <span class="font-bold text-blue-900">Versão Ativa:</span>
+                <span id="dev-versao-sistema" class="font-mono bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-700 font-semibold">v2.6.0 (Supabase Ativo)</span>
             </div>
-            <span id="dev-ultima-atualizacao" class="text-gray-500 text-[11px]">Última Compilação Local: --</span>
-        </div>
-
-        <!-- CONFIGURAÇÃO DA AUTOMAÇÃO GITHUB -->
-        <div class="bg-gray-50 p-4 rounded-xl border border-gray-300 mb-6 shadow-inner">
-            <h3 class="font-bold text-gray-800 text-xs mb-2">⚙️ Credenciais de Automação GitHub</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <input type="text" id="gh-user" placeholder="Usuário (ex: johnrick0811-art)" class="px-3 py-1.5 border rounded text-xs bg-white" onchange="salvarCredenciaisGitHub()">
-                <input type="text" id="gh-repo" placeholder="Repositório (ex: resultados-simulados)" class="px-3 py-1.5 border rounded text-xs bg-white" onchange="salvarCredenciaisGitHub()">
-                <input type="password" id="gh-token" placeholder="Token GitHub (ghp_...)" class="px-3 py-1.5 border rounded text-xs bg-white" onchange="salvarCredenciaisGitHub()">
-            </div>
+            <span id="dev-ultima-atualizacao" class="text-gray-500 text-[11px]">Última Sincronização: --</span>
         </div>
 
         <!-- SELETOR DINÂMICO DE SIMULADOS -->
@@ -111,8 +103,8 @@
 
         <!-- BOTÕES DE AÇÃO -->
         <div class="flex flex-col md:flex-row justify-center items-center gap-4 mb-8">
-            <button onclick="publicarAutomaticoGitHub()" class="bg-emerald-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:bg-emerald-700 transition text-sm flex items-center gap-2">🚀 Salvar e Publicar Automaticamente</button>
-            <p id="msg-sucesso" class="text-green-600 font-semibold text-sm hidden">✅ Publicado com sucesso no GitHub Pages!</p>
+            <button onclick="publicarAutomaticoGitHub()" class="bg-emerald-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:bg-emerald-700 transition text-sm flex items-center gap-2">🚀 Salvar e Publicar na Nuvem</button>
+            <p id="msg-sucesso" class="text-green-600 font-semibold text-sm hidden">✅ Salvo na nuvem com sucesso!</p>
         </div>
 
         <!-- LISTA DE ALUNOS -->
@@ -281,13 +273,17 @@
     </div>
 
     <script>
+        // Configuração do Supabase
+        const SUPABASE_URL = "https://ayclwucigtoufybvmtll.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_uXpJrC1SkAXsyqLqxqdFZw_RvEsxLXy";
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         let simAtual = "1";
         let listaDados1Dia = [];
         let listaDados2Dia = [];
         const VERSAO_SISTEMA = "v2.6.0";
 
         window.onload = function() {
-            carregarCredenciaisGitHub();
             carregarListaSimulados();
             carregarAuditoria();
             carregarAuditoriaDownloads();
@@ -296,42 +292,19 @@
 
         function atualizarBadgeVersaoPainel() {
             let ultimaPub = localStorage.getItem("dev_ultima_publicacao") || "Não publicada ainda";
-            document.getElementById("dev-versao-sistema").innerText = VERS_SISTEMA = VERSAO_SISTEMA;
-            document.getElementById("dev-ultima-atualizacao").innerText = `Última Publicação: ${ultimaPub}`;
-        }
-
-        function carregarCredenciaisGitHub() {
-            document.getElementById("gh-user").value = localStorage.getItem("aut_gh_user") || "";
-            document.getElementById("gh-repo").value = localStorage.getItem("aut_gh_repo") || "";
-            document.getElementById("gh-token").value = localStorage.getItem("aut_gh_token") || "";
-        }
-
-        function salvarCredenciaisGitHub() {
-            localStorage.setItem("aut_gh_user", document.getElementById("gh-user").value.trim());
-            localStorage.setItem("aut_gh_repo", document.getElementById("gh-repo").value.trim());
-            localStorage.setItem("aut_gh_token", document.getElementById("gh-token").value.trim());
+            document.getElementById("dev-versao-sistema").innerText = `${VERSAO_SISTEMA} (Supabase Ativo)`;
+            document.getElementById("dev-ultima-atualizacao").innerText = `Última Sincronização: ${ultimaPub}`;
         }
 
         async function publicarAutomaticoGitHub() {
-            salvarCredenciaisGitHub();
-            
             if (listaDados1Dia.length > 0) localStorage.setItem(`dados_1dia_sim${simAtual}`, JSON.stringify(listaDados1Dia));
             if (listaDados2Dia.length > 0) localStorage.setItem(`dados_2dia_sim${simAtual}`, JSON.stringify(listaDados2Dia));
             salvarParametrosAreaAtual();
 
-            let user = document.getElementById("gh-user").value.trim();
-            let repo = document.getElementById("gh-repo").value.trim();
-            let token = document.getElementById("gh-token").value.trim();
-
-            if (!user || !repo || !token) {
-                alert("Por favor, preencha suas credenciais do GitHub nas configurações acima.");
-                return;
-            }
-
             let dadosBackup = {};
             for(let i = 0; i < localStorage.length; i++) {
                 let key = localStorage.key(i);
-                if (!key.startsWith("aut_gh_") && !key.startsWith("dev_")) {
+                if (!key.startsWith("dev_")) {
                     dadosBackup[key] = localStorage.getItem(key);
                 }
             }
@@ -339,44 +312,24 @@
             let agoraStr = new Date().toLocaleString("pt-BR");
             localStorage.setItem("dev_ultima_publicacao", agoraStr);
 
-            let conteudoArquivo = `// dados.js - Versão ${VERSAO_SISTEMA} - Atualizado em: ${agoraStr}\nwindow.SISTEMA_DADOS_SIMULADOS = {\n    "status": "ativo",\n    "versao": "${VERSAO_SISTEMA}",\n    "localStorageBackup": ` + JSON.stringify(dadosBackup, null, 4) + `\n};`;
-
-            let path = "dados.js";
-            let urlAPI = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
-
             try {
-                let resGet = await fetch(urlAPI, { headers: { "Authorization": `token ${token}` } });
-                let sha = null;
-                if (resGet.ok) {
-                    let fileData = await resGet.json();
-                    sha = fileData.sha;
-                }
+                let { error } = await supabaseClient
+                    .from('dados_sistema')
+                    .upsert({ 
+                        id: 'estado_geral', 
+                        conteudo: dadosBackup, 
+                        atualizado_em: new Date() 
+                    });
 
-                let contentBase64 = btoa(unescape(encodeURIComponent(conteudoArquivo)));
-                let bodyData = {
-                    message: `Atualização de dados e TRI - ${VERSAO_SISTEMA}`,
-                    content: contentBase64,
-                    branch: "main"
-                };
-                if (sha) bodyData.sha = sha;
+                if (error) throw error;
 
-                let resPut = await fetch(urlAPI, {
-                    method: "PUT",
-                    headers: { "Authorization": `token ${token}`, "Content-Type": "application/json" },
-                    body: JSON.stringify(bodyData)
-                });
-
-                if (resPut.ok) {
-                    document.getElementById("msg-sucesso").classList.remove("hidden");
-                    setTimeout(() => document.getElementById("msg-sucesso").classList.add("hidden"), 5000);
-                    atualizarBadgeVersaoPainel();
-                    alert("Sucesso! O sistema foi publicado no GitHub e está sincronizado com a versão " + VERSAO_SISTEMA);
-                } else {
-                    let errJson = await resPut.json();
-                    alert("Erro ao publicar no GitHub: " + (errJson.message || "Verifique credenciais."));
-                }
+                document.getElementById("msg-sucesso").classList.remove("hidden");
+                setTimeout(() => document.getElementById("msg-sucesso").classList.add("hidden"), 5000);
+                atualizarBadgeVersaoPainel();
+                alert("🚀 Salvo na nuvem do Supabase com sucesso! Os alunos já visualizam as atualizações instantaneamente.");
             } catch (err) {
-                alert("Erro de conexão ao tentar enviar para o GitHub.");
+                console.error(err);
+                alert("Erro ao salvar na nuvem: " + err.message);
             }
 
             carregarAuditoria();
@@ -927,7 +880,7 @@
             let dadosBackup = {};
             for(let i = 0; i < localStorage.length; i++) {
                 let key = localStorage.key(i);
-                if (!key.startsWith("aut_gh_") && !key.startsWith("dev_")) dadosBackup[key] = localStorage.getItem(key);
+                if (!key.startsWith("dev_")) dadosBackup[key] = localStorage.getItem(key);
             }
             let blob = new Blob([JSON.stringify(dadosBackup, null, 2)], {type: "application/json"});
             let url = URL.createObjectURL(blob);
