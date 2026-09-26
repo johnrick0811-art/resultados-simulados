@@ -6,8 +6,16 @@
     <title>Portal do Aluno - Histórico de Simulados & Nuvem Local</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Carrega o banco de dados local dados.js -->
-    <script src="dados.js"></script>
+    
+    <!-- Carregador dinâmico anti-cache do dados.js -->
+    <script>
+        (function() {
+            var script = document.createElement('script');
+            script.src = 'dados.js?v=' + new Date().getTime();
+            document.write(script.outerHTML);
+        })();
+    </script>
+
     <style>
         details summary::-webkit-details-marker { display: none; }
         details[open] summary .seta-gaveta { transform: rotate(180deg); }
@@ -177,7 +185,6 @@
         let graficoAlunoInstance = null;
         let graficoHistoricoInstance = null;
 
-        // Carrega e sincroniza o dados.js forçando a atualização no localStorage do aluno
         async function carregarDadosDaNuvem() {
             if (window.SISTEMA_DADOS_SIMULADOS && window.SISTEMA_DADOS_SIMULADOS.localStorageBackup) {
                 let backup = window.SISTEMA_DADOS_SIMULADOS.localStorageBackup;
@@ -201,7 +208,6 @@
 
             carregarOpcoesSimuladoLogin();
             
-            // Garante que SEMPRE limpa qualquer sessão anterior ao abrir o portal, forçando a tela de login
             localStorage.removeItem("aluno_logado_atual");
             alunoLogado = null;
 
@@ -314,7 +320,6 @@
             return String(txt || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
         }
 
-        // Leitura dinâmica e garantida das configurações da TRI atualizadas no laboratório
         function obterConfigAreasSimulado(sId) {
             let def = {
                 ling: { base: 6.8, pesoDif: 9.5, teto: 1000, questoes: {} },
@@ -325,7 +330,6 @@
 
             let chaveConfig = `config_areas_sim${sId}`;
             
-            // Verifica primeiro se veio direto da nuvem atualizada no dados.js
             if (window.SISTEMA_DADOS_SIMULADOS && window.SISTEMA_DADOS_SIMULADOS.localStorageBackup) {
                 if (window.SISTEMA_DADOS_SIMULADOS.localStorageBackup[chaveConfig]) {
                     let configNuvem = window.SISTEMA_DADOS_SIMULADOS.localStorageBackup[chaveConfig];
@@ -480,7 +484,6 @@
 
             if (!resAtual) return;
 
-            // 1º DIA (Q1 a Q90)
             if (reg1) {
                 for (let q = 1; q <= 90; q++) {
                     let area = q <= 45 ? 'ling' : 'hum';
@@ -511,7 +514,6 @@
                 }
             }
 
-            // 2º DIA (Q91 a Q180)
             if (reg2) {
                 for (let qFile = 1; qFile <= 90; qFile++) {
                     let qReal = qFile + 90;
