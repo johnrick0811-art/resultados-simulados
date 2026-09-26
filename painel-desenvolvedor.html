@@ -38,7 +38,7 @@
             <div class="flex items-center space-x-2">
                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
                 <span class="font-bold text-blue-900">Versão Ativa:</span>
-                <span id="dev-versao-sistema" class="font-mono bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-700 font-semibold">v2.7.0 (TRI 3PL Ativa)</span>
+                <span id="dev-versao-sistema" class="font-mono bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-700 font-semibold">v2.8.0 (Laboratório Dinâmico Ativo)</span>
             </div>
             <span id="dev-ultima-atualizacao" class="text-gray-500 text-[11px]">Última Sincronização: --</span>
         </div>
@@ -240,13 +240,14 @@
                     <div class="bg-white p-5 rounded-xl border shadow-sm flex flex-col justify-between">
                         <div>
                             <div class="flex justify-between items-center mb-2">
-                                <h3 class="font-bold text-gray-800 text-sm">📊 Simulador Instantâneo</h3>
+                                <h3 class="font-bold text-gray-800 text-sm">📊 Simulador Instantâneo por Desempenho</h3>
                                 <span id="sim-aviso-bloco" class="text-[10px] bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded">Ativas: 45</span>
                             </div>
+                            <p class="text-[11px] text-gray-500 mb-3">Defina quantos acertos o aluno hipotético obteve em cada nível desta prova:</p>
                             <div class="grid grid-cols-3 gap-2 mb-4">
-                                <div><label class="block text-[10px] font-bold text-green-700 mb-1">🟢 Fáceis</label><input type="number" id="sim-facil" min="0" max="45" value="10" oninput="ajustarAcertosSimulador('facil')" class="w-full px-2 py-1 border rounded text-xs font-bold text-center"></div>
-                                <div><label class="block text-[10px] font-bold text-yellow-700 mb-1">🟡 Médias</label><input type="number" id="sim-medio" min="0" max="45" value="15" oninput="ajustarAcertosSimulador('medio')" class="w-full px-2 py-1 border rounded text-xs font-bold text-center"></div>
-                                <div><label class="block text-[10px] font-bold text-red-700 mb-1">🔴 Difíceis</label><input type="number" id="sim-dificil" min="0" max="45" value="5" oninput="ajustarAcertosSimulador('dificil')" class="w-full px-2 py-1 border rounded text-xs font-bold text-center"></div>
+                                <div><label class="block text-[10px] font-bold text-green-700 mb-1">🟢 Fáceis (<span id="max-facil-lbl">0</span>)</label><input type="number" id="sim-facil" min="0" max="45" value="10" oninput="ajustarAcertosSimulador('facil')" class="w-full px-2 py-1 border rounded text-xs font-bold text-center"></div>
+                                <div><label class="block text-[10px] font-bold text-yellow-700 mb-1">🟡 Médias (<span id="max-medio-lbl">0</span>)</label><input type="number" id="sim-medio" min="0" max="45" value="15" oninput="ajustarAcertosSimulador('medio')" class="w-full px-2 py-1 border rounded text-xs font-bold text-center"></div>
+                                <div><label class="block text-[10px] font-bold text-red-700 mb-1">🔴 Difíceis (<span id="max-dificil-lbl">0</span>)</label><input type="number" id="sim-dificil" min="0" max="45" value="5" oninput="ajustarAcertosSimulador('dificil')" class="w-full px-2 py-1 border rounded text-xs font-bold text-center"></div>
                             </div>
                         </div>
                         <div class="bg-indigo-50 p-3 rounded-xl border border-indigo-200 text-center">
@@ -256,7 +257,18 @@
                     </div>
                 </div>
                 <div class="bg-white p-5 rounded-xl border shadow-sm">
-                    <h3 class="font-bold text-gray-800 text-sm mb-1">🎯 Mapeamento de Dificuldade & Anulações</h3>
+                    <div class="flex flex-col md:flex-row justify-between items-center mb-3 gap-2">
+                        <div>
+                            <h3 class="font-bold text-gray-800 text-sm">🎯 Mapeamento de Dificuldade & Anulações</h3>
+                            <p class="text-xs text-gray-500">Classifique as 45 questões. O painel contabiliza automaticamente os limites para o simulador.</p>
+                        </div>
+                        <div class="flex items-center space-x-2 text-xs font-bold">
+                            <span class="bg-green-100 text-green-800 px-2 py-1 rounded">🟢 Fáceis: <span id="contador-facil-map">0</span></span>
+                            <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded">🟡 Médias: <span id="contador-medio-map">0</span></span>
+                            <span class="bg-red-100 text-red-800 px-2 py-1 rounded">🔴 Difíceis: <span id="contador-dificil-map">0</span></span>
+                            <span class="bg-gray-200 text-gray-700 px-2 py-1 rounded">🚫 Anuladas: <span id="contador-anulada-map">0</span></span>
+                        </div>
+                    </div>
                     <div class="overflow-x-auto max-h-60 border rounded-lg">
                         <table class="min-w-full divide-y divide-gray-200 text-xs">
                             <thead class="bg-gray-100 sticky top-0"><tr><th class="px-4 py-2 text-left">Questão</th><th class="px-4 py-2 text-left">Status</th></tr></thead>
@@ -281,7 +293,7 @@
         let simAtual = "1";
         let listaDados1Dia = [];
         let listaDados2Dia = [];
-        const VERSAO_SISTEMA = "v2.7.0";
+        const VERSAO_SISTEMA = "v2.8.0";
 
         window.onload = function() {
             carregarListaSimulados();
@@ -292,7 +304,7 @@
 
         function atualizarBadgeVersaoPainel() {
             let ultimaPub = localStorage.getItem("dev_ultima_publicacao") || "Não publicada ainda";
-            document.getElementById("dev-versao-sistema").innerText = `${VERSAO_SISTEMA} (TRI 3PL Ativa)`;
+            document.getElementById("dev-versao-sistema").innerText = `${VERSAO_SISTEMA} (Laboratório Dinâmico Ativo)`;
             document.getElementById("dev-ultima-atualizacao").innerText = `Última Sincronização: ${ultimaPub}`;
         }
 
@@ -551,16 +563,14 @@
             function calcTRI(acertosTotais, fFase, dFase, areaKey) {
                 let c = cfg[areaKey];
                 
-                // Fator de Coerência do ENEM (Punição rigorosa para chutes em questões difíceis sem base nas fáceis)
                 let fatorCoerencia = 1.0;
                 if (dFase > 0 && fFase < 2) {
-                    fatorCoerencia = 0.40; // Penaliza severamente o acerto fortuito (Incoerência total - ex: Participante B)
+                    fatorCoerencia = 0.40; 
                 } else if (dFase > fFase) {
-                    fatorCoerencia = 0.70; // Penalidade moderada por inconsistência parcial
+                    fatorCoerencia = 0.70; 
                 }
 
                 let baseScore = areaKey === 'ling' ? 310.0 : (areaKey === 'hum' ? 300.0 : (areaKey === 'nat' ? 290.0 : 280.0));
-                
                 let score = baseScore + (acertosTotais * c.base);
                 
                 for (let q = 1; q <= 45; q++) {
@@ -570,7 +580,6 @@
                     let regOrig = (areaKey === 'ling' || areaKey === 'hum') ? reg1 : reg2;
                     let dQ = obterDado(regOrig, qGlobal);
                     if (dQ.mark > 0) {
-                        // Aplicando o bônus de dificuldade ponderado pela coerência estatística (3PL)
                         if (d === 'dificil') score += (c.pesoDif * fatorCoerencia);
                         else if (d === 'medio') score += (c.pesoDif * 0.5);
                         else score += (c.pesoDif * 0.25);
@@ -827,9 +836,18 @@
             const tbody = document.getElementById("tabela-mapeamento-questoes");
             tbody.innerHTML = "";
             let inicioQ = areaKey === 'ling' ? 1 : (areaKey === 'hum' ? 46 : (areaKey === 'nat' ? 91 : 136));
+            
+            let contF = 0, contM = 0, contD = 0, contA = 0;
+
             for (let i = 1; i <= 45; i++) {
                 let qGlobal = inicioQ + i - 1;
                 let nivelAtual = c.questoes[i] || "medio";
+                
+                if (nivelAtual === 'facil') contF++;
+                else if (nivelAtual === 'medio') contM++;
+                else if (nivelAtual === 'dificil') contD++;
+                else if (nivelAtual === 'anulada') contA++;
+
                 let tr = document.createElement("tr");
                 tr.innerHTML = `
                     <td class="px-4 py-2 font-semibold text-gray-700">Questão ${qGlobal} (${i}ª da área)</td>
@@ -844,6 +862,23 @@
                 `;
                 tbody.appendChild(tr);
             }
+
+            // Atualiza os contadores no topo da tabela de mapeamento
+            document.getElementById("contador-facil-map").innerText = contF;
+            document.getElementById("contador-medio-map").innerText = contM;
+            document.getElementById("contador-dificil-map").innerText = contD;
+            document.getElementById("contador-anulada-map").innerText = contA;
+
+            // Atualiza os limites máximos exibidos no Simulador Instantâneo
+            document.getElementById("max-facil-lbl").innerText = contF;
+            document.getElementById("max-medio-lbl").innerText = contM;
+            document.getElementById("max-dificil-lbl").innerText = contD;
+            document.getElementById("sim-aviso-bloco").innerText = `Ativas: ${45 - contA}`;
+
+            // Ajusta os limites do input do simulador para respeitar a contagem real da prova
+            document.getElementById("sim-facil").max = contF;
+            document.getElementById("sim-medio").max = contM;
+            document.getElementById("sim-dificil").max = contD;
         }
 
         function salvarNivelQuestaoArea(qLocal, nivel) {
@@ -851,8 +886,8 @@
             let cfg = obterConfigAreas();
             cfg[areaKey].questoes[qLocal] = nivel;
             salvarConfigAreas(cfg);
-            atualizarSimuladorLaboratorio();
             renderizarTabelaMapeamentoArea(areaKey, cfg[areaKey]);
+            atualizarSimuladorLaboratorio();
         }
 
         function obterTotalAtivasAreaAtual() {
@@ -865,41 +900,44 @@
         }
 
         function ajustarAcertosSimulador(alterado) {
-            let maxTotal = obterTotalAtivasAreaAtual();
+            let areaKey = document.getElementById("select-area-laboratorio").value;
+            let cfg = obterConfigAreas();
+            let c = cfg[areaKey];
+            
+            let maxF = 0, maxM = 0, maxD = 0;
+            for (let i = 1; i <= 45; i++) {
+                let n = c.questoes[i] || 'medio';
+                if (n === 'facil') maxF++;
+                else if (n === 'medio') maxM++;
+                else if (n === 'dificil') maxD++;
+            }
+
             let f = parseInt(document.getElementById("sim-facil").value) || 0;
             let m = parseInt(document.getElementById("sim-medio").value) || 0;
             let d = parseInt(document.getElementById("sim-dificil").value) || 0;
-            if (f < 0) f = 0; if (m < 0) m = 0; if (d < 0) d = 0;
-            if (alterado === 'facil') {
-                if (f > maxTotal) f = maxTotal; let resto = maxTotal - f;
-                if (m > resto) { m = resto; d = 0; } else { d = resto - m; }
-            } else if (alterado === 'medio') {
-                if (m > maxTotal) m = maxTotal; let resto = maxTotal - m;
-                if (d > resto) { d = resto; f = 0; } else { f = resto - d; }
-            } else if (alterado === 'dificil') {
-                if (d > maxTotal) d = maxTotal; let resto = maxTotal - d;
-                if (m > resto) { m = resto; f = 0; } else { f = resto - m; }
-            }
+
+            if (f > maxF) f = maxF; if (f < 0) f = 0;
+            if (m > maxM) m = maxM; if (m < 0) m = 0;
+            if (d > maxD) d = maxD; if (d < 0) d = 0;
+
             document.getElementById("sim-facil").value = f;
             document.getElementById("sim-medio").value = m;
             document.getElementById("sim-dificil").value = d;
+
             atualizarSimuladorLaboratorio();
         }
 
         function atualizarSimuladorLaboratorio() {
             salvarParametrosAreaAtual();
-            let maxTotal = obterTotalAtivasAreaAtual();
-            document.getElementById("sim-aviso-bloco").innerText = `Ativas: ${maxTotal}`;
             let f = parseInt(document.getElementById("sim-facil").value) || 0;
             let m = parseInt(document.getElementById("sim-medio").value) || 0;
             let d = parseInt(document.getElementById("sim-dificil").value) || 0;
             let total = f + m + d;
-            if (total > maxTotal) { f = maxTotal; m = 0; d = 0; total = maxTotal; }
+            
             let areaKey = document.getElementById("select-area-laboratorio").value;
             let cfg = obterConfigAreas();
             let c = cfg[areaKey];
             
-            // Simulação coerente com a lógica 3PL no laboratório
             let fatorC = (d > 0 && f < 2) ? 0.40 : 1.0;
             let baseScore = areaKey === 'ling' ? 310.0 : (areaKey === 'hum' ? 300.0 : (areaKey === 'nat' ? 290.0 : 280.0));
             let score = baseScore + (total * c.base) + (d * c.pesoDif * fatorC) + (m * (c.pesoDif * 0.5)) + (f * (c.pesoDif * 0.25));
