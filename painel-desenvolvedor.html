@@ -310,13 +310,20 @@
 
         function excluirSimuladoAtual() {
             let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1", "2", "3", "4", "5"]');
-            if (simuladosSalvos.length <= 1) { alert("Mantenha ao menos um simulado cadastrado."); return; }
+            
             if(confirm(`Tem certeza que deseja excluir o ${simAtual}º Simulado e todos os seus dados?`)) {
                 localStorage.removeItem(`dados_1dia_sim${simAtual}`);
                 localStorage.removeItem(`dados_2dia_sim${simAtual}`);
                 localStorage.removeItem(`notas_redacao_sim${simAtual}`);
                 localStorage.removeItem(`config_areas_sim${simAtual}`);
+                
                 simuladosSalvos = simuladosSalvos.filter(s => s !== simAtual);
+                
+                // Se zerar a lista, recria o "1" automaticamente para manter a integridade
+                if (simuladosSalvos.length === 0) {
+                    simuladosSalvos = ["1"];
+                }
+                
                 localStorage.setItem("lista_simulados_cadastrados", JSON.stringify(simuladosSalvos));
                 simAtual = simuladosSalvos[0];
                 carregarListaSimulados();
