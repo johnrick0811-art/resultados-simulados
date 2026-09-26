@@ -38,7 +38,7 @@
             <div class="flex items-center space-x-2">
                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
                 <span class="font-bold text-blue-900">Versão Ativa:</span>
-                <span id="dev-versao-sistema" class="font-mono bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-700 font-semibold">v2.8.0 (Laboratório Dinâmico Ativo)</span>
+                <span id="dev-versao-sistema" class="font-mono bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-700 font-semibold">v2.9.0 (Filtros & Exportação XLSX)</span>
             </div>
             <span id="dev-ultima-atualizacao" class="text-gray-500 text-[11px]">Última Sincronização: --</span>
         </div>
@@ -107,17 +107,46 @@
             <p id="msg-sucesso" class="text-green-600 font-semibold text-sm hidden">✅ Salvo na nuvem com sucesso!</p>
         </div>
 
-        <!-- LISTA DE ALUNOS -->
+        <!-- CENTRAL DE FILTROS E LISTA DE ALUNOS -->
         <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-inner mb-6">
-            <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-3">
-                <h3 class="text-lg font-bold text-gray-700">📋 Lista de Alunos</h3>
-                <div class="flex items-center space-x-2 w-full md:w-auto">
-                    <input type="text" id="filtro-nome" onkeyup="carregarAuditoria()" placeholder="🔍 Buscar aluno..." class="px-3 py-1.5 border rounded text-xs bg-white shadow-sm flex-1 md:w-64">
-                    <select id="filtro-turma" onchange="carregarAuditoria()" class="px-3 py-1.5 border rounded text-xs bg-white shadow-sm font-semibold text-gray-700">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-3 border-b pb-4">
+                <h3 class="text-lg font-bold text-gray-700">📋 Central de Alunos, Filtros & Exportação</h3>
+                <button onclick="exportarTabelaFiltradaXLSX()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow flex items-center gap-1.5">
+                    📊 Baixar Planilha XLSX Filtrada
+                </button>
+            </div>
+
+            <!-- BARRA DE FILTRAGEM E ORDENAÇÃO AVANÇADA -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4 bg-white p-4 rounded-xl border shadow-sm">
+                <div>
+                    <label class="block text-[11px] font-bold text-gray-600 mb-1">🔍 Buscar Aluno</label>
+                    <input type="text" id="filtro-nome" onkeyup="carregarAuditoria()" placeholder="Nome do aluno..." class="w-full px-3 py-2 border rounded text-xs bg-gray-50 font-medium">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-gray-600 mb-1">🏫 Filtrar Turma</label>
+                    <select id="filtro-turma" onchange="carregarAuditoria()" class="w-full px-3 py-2 border rounded text-xs bg-gray-50 font-semibold text-gray-700">
                         <option value="TODAS">Todas as Turmas</option>
                     </select>
                 </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-gray-600 mb-1">📊 Ordenar por</label>
+                    <select id="ordenacao-tabela" onchange="carregarAuditoria()" class="w-full px-3 py-2 border rounded text-xs bg-gray-50 font-semibold text-gray-700">
+                        <option value="nome">Ordem Alfabética (A-Z)</option>
+                        <option value="media_desc">Média Geral (Maior para Menor)</option>
+                        <option value="media_asc">Média Geral (Menor para Maior)</option>
+                        <option value="chamada">Número de Chamada</option>
+                        <option value="mat">Maior Nota Matemática</option>
+                        <option value="nat">Maior Nota Natureza</option>
+                        <option value="hum">Maior Nota Humanas</option>
+                        <option value="ling">Maior Nota Linguagens</option>
+                        <option value="red">Maior Nota Redação</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button onclick="limparFiltrosTabela()" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 rounded text-xs font-bold transition">🔄 Limpar Filtros</button>
+                </div>
             </div>
+
             <div class="overflow-x-auto max-h-96">
                 <table class="min-w-full divide-y divide-gray-300 bg-white rounded-lg shadow-sm">
                     <thead class="bg-gray-100 sticky top-0">
@@ -125,14 +154,16 @@
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase">Chamada</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase">Turma</th>
                             <th class="px-4 py-2 text-left text-xs font-medium text-gray-600 uppercase">Nome do Aluno</th>
-                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">1º Dia</th>
-                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">2º Dia</th>
-                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">Média Parcial</th>
+                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">Linguagens</th>
+                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">Humanas</th>
+                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">Natureza</th>
+                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">Matemática</th>
                             <th class="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">Redação</th>
+                            <th class="px-4 py-2 text-center text-xs font-medium text-gray-600 uppercase">Média Geral</th>
                         </tr>
                     </thead>
                     <tbody id="tabela-auditoria" class="divide-y divide-gray-200 text-xs">
-                        <tr><td colspan="7" class="px-4 py-4 text-center text-gray-400">Carregue as planilhas acima.</td></tr>
+                        <tr><td colspan="9" class="px-4 py-4 text-center text-gray-400">Carregue as planilhas acima.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -293,7 +324,7 @@
         let simAtual = "1";
         let listaDados1Dia = [];
         let listaDados2Dia = [];
-        const VERSAO_SISTEMA = "v2.8.0";
+        const VERSAO_SISTEMA = "v2.9.0";
 
         window.onload = function() {
             carregarListaSimulados();
@@ -304,7 +335,7 @@
 
         function atualizarBadgeVersaoPainel() {
             let ultimaPub = localStorage.getItem("dev_ultima_publicacao") || "Não publicada ainda";
-            document.getElementById("dev-versao-sistema").innerText = `${VERSAO_SISTEMA} (Laboratório Dinâmico Ativo)`;
+            document.getElementById("dev-versao-sistema").innerText = `${VERSAO_SISTEMA} (Filtros & Exportação XLSX)`;
             document.getElementById("dev-ultima-atualizacao").innerText = `Última Sincronização: ${ultimaPub}`;
         }
 
@@ -559,16 +590,11 @@
                 }
             }
 
-            // Motor TRI Ajustado com Modelo 3PL (Curva Logística de Birnbaum) e Fator de Coerência
             function calcTRI(acertosTotais, fFase, dFase, areaKey) {
                 let c = cfg[areaKey];
-                
                 let fatorCoerencia = 1.0;
-                if (dFase > 0 && fFase < 2) {
-                    fatorCoerencia = 0.40; 
-                } else if (dFase > fFase) {
-                    fatorCoerencia = 0.70; 
-                }
+                if (dFase > 0 && fFase < 2) fatorCoerencia = 0.40;
+                else if (dFase > fFase) fatorCoerencia = 0.70;
 
                 let baseScore = areaKey === 'ling' ? 310.0 : (areaKey === 'hum' ? 300.0 : (areaKey === 'nat' ? 290.0 : 280.0));
                 let score = baseScore + (acertosTotais * c.base);
@@ -602,25 +628,12 @@
             return { presente1: reg1 !== null, presente2: reg2 !== null, ling: tLing, hum: tHum, nat: tNat, mat: tMat, red: tRed, media };
         }
 
-        function carregarAuditoria() {
+        function obterAlunosProcessados() {
             let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${simAtual}`) || "[]");
             let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${simAtual}`) || "[]");
             let redacoes = JSON.parse(localStorage.getItem(`notas_redacao_sim${simAtual}`) || "{}");
 
-            const tbody = document.getElementById("tabela-auditoria");
-            tbody.innerHTML = "";
-
-            if (d1.length === 0 && d2.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-4 text-center text-gray-400">Nenhum dado salvo para o ${simAtual}º Simulado.</td></tr>`;
-                document.getElementById("stat-total-alunos").innerText = "0";
-                document.getElementById("stat-media-geral").innerText = "0.0";
-                document.getElementById("stat-maior-nota").innerText = "0.0";
-                document.getElementById("stat-menor-nota").innerText = "0.0";
-                return;
-            }
-
             let mapaAlunos = new Map();
-            let turmasSet = new Set();
             function processarLista(lista) {
                 lista.forEach(item => {
                     let nome = item["Name"] || item["NAME"] || item["Nome"] || "";
@@ -628,12 +641,49 @@
                     let nomeNorm = normalizar(nome);
                     let rNo = String(item["Roll No"] || item["ROLLNO"] || "").trim();
                     let turma = item["Class"] || item["CLASS"] || item["Turma"] || "A";
-                    turmasSet.add(turma);
                     if (!mapaAlunos.has(nomeNorm)) mapaAlunos.set(nomeNorm, { roll: rNo, turma: turma, nome: nome });
                 });
             }
             processarLista(d1);
             processarLista(d2);
+
+            let lista = [];
+            mapaAlunos.forEach(aluno => {
+                let notasCalc = calcularNotasAlunoSimulado(aluno.nome, aluno.turma, aluno.roll, d1, d2, redacoes);
+                if (notasCalc) {
+                    lista.push({
+                        chamada: aluno.roll || "-",
+                        turma: aluno.turma,
+                        nome: aluno.nome,
+                        ling: notasCalc.ling,
+                        hum: notasCalc.hum,
+                        nat: notasCalc.nat,
+                        mat: notasCalc.mat,
+                        red: notasCalc.red,
+                        media: notasCalc.media
+                    });
+                }
+            });
+            return lista;
+        }
+
+        function carregarAuditoria() {
+            let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${simAtual}`) || "[]");
+            let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${simAtual}`) || "[]");
+            const tbody = document.getElementById("tabela-auditoria");
+            tbody.innerHTML = "";
+
+            if (d1.length === 0 && d2.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-4 text-center text-gray-400">Nenhum dado salvo para o ${simAtual}º Simulado.</td></tr>`;
+                document.getElementById("stat-total-alunos").innerText = "0";
+                document.getElementById("stat-media-geral").innerText = "0.0";
+                document.getElementById("stat-maior-nota").innerText = "0.0";
+                document.getElementById("stat-menor-nota").innerText = "0.0";
+                return;
+            }
+
+            let alunos = obterAlunosProcessados();
+            let turmasSet = new Set(alunos.map(a => a.turma));
 
             const selectTurma = document.getElementById("filtro-turma");
             let turmaSel = selectTurma.value;
@@ -645,57 +695,115 @@
                 selectTurma.appendChild(opt);
             });
 
+            // Aplicar Filtros
             let termoBusca = normalizar(document.getElementById("filtro-nome").value);
             let turmaFiltro = document.getElementById("filtro-turma").value;
-            let listaAlunosUnicos = Array.from(mapaAlunos.values());
-            let somaMedias = 0, maior = 0, menor = 9999, totalValidos = 0;
+            let criterioOrdenacao = document.getElementById("ordenacao-tabela").value;
 
-            listaAlunosUnicos.forEach(aluno => {
-                let rNo = aluno.roll || "-";
-                let turma = aluno.turma;
-                let nome = aluno.nome;
+            let filtrados = alunos.filter(a => {
+                if (termoBusca && !normalizar(a.nome).includes(termoBusca)) return false;
+                if (turmaFiltro !== "TODAS" && a.turma !== turmaFiltro) return false;
+                return true;
+            });
 
-                if(termoBusca && !normalizar(nome).includes(termoBusca)) return;
-                if(turmaFiltro !== "TODAS" && turma !== turmaFiltro) return;
+            // Aplicar Ordenação
+            filtrados.sort((a, b) => {
+                if (criterioOrdenacao === 'nome') return a.nome.localeCompare(b.nome);
+                if (criterioOrdenacao === 'media_desc') return b.media - a.media;
+                if (criterioOrdenacao === 'media_asc') return a.media - b.media;
+                if (criterioOrdenacao === 'chamada') return String(a.chamada).localeCompare(String(b.chamada), undefined, {numeric: true});
+                if (criterioOrdenacao === 'mat') return b.mat - a.mat;
+                if (criterioOrdenacao === 'nat') return b.nat - a.nat;
+                if (criterioOrdenacao === 'hum') return b.hum - a.hum;
+                if (criterioOrdenacao === 'ling') return b.ling - a.ling;
+                if (criterioOrdenacao === 'red') return b.red - a.red;
+                return 0;
+            });
 
-                let notasCalc = calcularNotasAlunoSimulado(nome, turma, rNo, d1, d2, redacoes);
-                let mediaStr = "-";
-                let badge1 = '<span class="text-gray-400">Ausente</span>';
-                let badge2 = '<span class="text-gray-400">Ausente</span>';
-
-                if(notasCalc) {
-                    mediaStr = notasCalc.media.toFixed(1);
-                    somaMedias += notasCalc.media;
-                    if(notasCalc.media > maior) maior = notasCalc.media;
-                    if(notasCalc.media < menor) menor = notasCalc.media;
-                    totalValidos++;
-                    if(notasCalc.presente1) badge1 = '<span class="text-green-600 font-bold">Presente</span>';
-                    if(notasCalc.presente2) badge2 = '<span class="text-green-600 font-bold">Presente</span>';
-                }
-
-                let notaRedacao = redacoes[normalizar(nome)] !== undefined ? redacoes[normalizar(nome)] : "";
+            let somaMedias = 0, maior = 0, menor = 9999;
+            filtrados.forEach(a => {
+                somaMedias += a.media;
+                if (a.media > maior) maior = a.media;
+                if (a.media < menor) menor = a.media;
 
                 let tr = document.createElement("tr");
                 tr.innerHTML = `
-                    <td class="px-4 py-2 font-semibold text-gray-700">${rNo}</td>
-                    <td class="px-4 py-2 text-gray-600">${turma}</td>
-                    <td class="px-4 py-2 font-medium text-blue-600 cursor-pointer hover:underline" onclick="inspecionarAluno('${nome.replace(/'/g, "\\'")}', '${turma}', '${rNo}')">${nome}</td>
-                    <td class="px-4 py-2 text-center">${badge1}</td>
-                    <td class="px-4 py-2 text-center">${badge2}</td>
-                    <td class="px-4 py-2 text-center font-bold text-gray-800">${mediaStr}</td>
-                    <td class="px-4 py-2 text-center">
-                        <input type="number" step="10" min="0" max="1000" value="${notaRedacao}" 
-                            onchange="salvarRedacao('${nome.replace(/'/g, "\\'")}', this.value)" 
-                            class="w-24 px-2 py-1 border rounded text-center font-bold text-blue-600" placeholder="0-1000">
-                    </td>
+                    <td class="px-4 py-2 font-semibold text-gray-700">${a.chamada}</td>
+                    <td class="px-4 py-2 text-gray-600">${a.turma}</td>
+                    <td class="px-4 py-2 font-medium text-blue-600 cursor-pointer hover:underline" onclick="inspecionarAluno('${a.nome.replace(/'/g, "\\'")}', '${a.turma}', '${a.chamada}')">${a.nome}</td>
+                    <td class="px-4 py-2 text-center font-semibold text-indigo-600">${a.ling.toFixed(1)}</td>
+                    <td class="px-4 py-2 text-center font-semibold text-green-600">${a.hum.toFixed(1)}</td>
+                    <td class="px-4 py-2 text-center font-semibold text-yellow-600">${a.nat.toFixed(1)}</td>
+                    <td class="px-4 py-2 text-center font-semibold text-purple-600">${a.mat.toFixed(1)}</td>
+                    <td class="px-4 py-2 text-center font-semibold text-pink-600">${a.red.toFixed(0)}</td>
+                    <td class="px-4 py-2 text-center font-bold text-gray-900">${a.media.toFixed(1)}</td>
                 `;
                 tbody.appendChild(tr);
             });
 
-            document.getElementById("stat-total-alunos").innerText = listaAlunosUnicos.length;
-            document.getElementById("stat-media-geral").innerText = totalValidos > 0 ? (somaMedias / totalValidos).toFixed(1) : "0.0";
+            document.getElementById("stat-total-alunos").innerText = filtrados.length;
+            document.getElementById("stat-media-geral").innerText = filtrados.length > 0 ? (somaMedias / filtrados.length).toFixed(1) : "0.0";
             document.getElementById("stat-maior-nota").innerText = maior > 0 ? maior.toFixed(1) : "0.0";
             document.getElementById("stat-menor-nota").innerText = menor < 9999 ? menor.toFixed(1) : "0.0";
+        }
+
+        function limparFiltrosTabela() {
+            document.getElementById("filtro-nome").value = "";
+            document.getElementById("filtro-turma").value = "TODAS";
+            document.getElementById("ordenacao-tabela").value = "nome";
+            carregarAuditoria();
+        }
+
+        function exportarTabelaFiltradaXLSX() {
+            let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${simAtual}`) || "[]");
+            if (d1.length === 0) {
+                alert("Não há dados carregados para exportar.");
+                return;
+            }
+
+            let alunos = obterAlunosProcessados();
+            let termoBusca = normalizar(document.getElementById("filtro-nome").value);
+            let turmaFiltro = document.getElementById("filtro-turma").value;
+            let criterioOrdenacao = document.getElementById("ordenacao-tabela").value;
+
+            let filtrados = alunos.filter(a => {
+                if (termoBusca && !normalizar(a.nome).includes(termoBusca)) return false;
+                if (turmaFiltro !== "TODAS" && a.turma !== turmaFiltro) return false;
+                return true;
+            });
+
+            filtrados.sort((a, b) => {
+                if (criterioOrdenacao === 'nome') return a.nome.localeCompare(b.nome);
+                if (criterioOrdenacao === 'media_desc') return b.media - a.media;
+                if (criterioOrdenacao === 'media_asc') return a.media - b.media;
+                if (criterioOrdenacao === 'chamada') return String(a.chamada).localeCompare(String(b.chamada), undefined, {numeric: true});
+                if (criterioOrdenacao === 'mat') return b.mat - a.mat;
+                if (criterioOrdenacao === 'nat') return b.nat - a.nat;
+                if (criterioOrdenacao === 'hum') return b.hum - a.hum;
+                if (criterioOrdenacao === 'ling') return b.ling - a.ling;
+                if (criterioOrdenacao === 'red') return b.red - a.red;
+                return 0;
+            });
+
+            let dadosFormatados = filtrados.map((a, index) => ({
+                "Posição": index + 1,
+                "Nº Chamada": a.chamada,
+                "Turma": a.turma,
+                "Nome do Aluno": a.nome,
+                "Linguagens": Number(a.ling.toFixed(1)),
+                "Humanas": Number(a.hum.toFixed(1)),
+                "Natureza": Number(a.nat.toFixed(1)),
+                "Matemática": Number(a.mat.toFixed(1)),
+                "Redação": Number(a.red.toFixed(0)),
+                "Média Geral (ENEM)": Number(a.media.toFixed(1))
+            }));
+
+            let worksheet = XLSX.utils.json_to_sheet(dadosFormatados);
+            let workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, `Simulado_${simAtual}`);
+            
+            let nomeArquivo = `Relatorio_Simulado_${simAtual}_Turma_${turmaFiltro}.xlsx`;
+            XLSX.writeFile(workbook, nomeArquivo);
         }
 
         function carregarAuditoriaDownloads() {
@@ -728,7 +836,7 @@
             function acharRegistroExato(lista) {
                 return lista.find(item => {
                     let nm = normalizar(item["Name"] || item["NAME"] || item["Nome"]);
-                    let rNo = String(item["Roll No"] || item["ROLLNO"] || item["RollNo"] || "").trim();
+                    let rNo = String(item["Roll No"] || item["ROLLNO"] || "").trim();
                     let turma = String(item["Class"] || item["CLASS"] || item["Turma"] || "A").trim();
                     return nm === normalizar(nomeAlvo) && turma === String(turmaAlvo).trim() && (freq === "-" || rNo === freq);
                 }) || lista.find(item => normalizar(item["Name"] || item["NAME"] || item["Nome"]) === normalizar(nomeAlvo));
@@ -863,19 +971,16 @@
                 tbody.appendChild(tr);
             }
 
-            // Atualiza os contadores no topo da tabela de mapeamento
             document.getElementById("contador-facil-map").innerText = contF;
             document.getElementById("contador-medio-map").innerText = contM;
             document.getElementById("contador-dificil-map").innerText = contD;
             document.getElementById("contador-anulada-map").innerText = contA;
 
-            // Atualiza os limites máximos exibidos no Simulador Instantâneo
             document.getElementById("max-facil-lbl").innerText = contF;
             document.getElementById("max-medio-lbl").innerText = contM;
             document.getElementById("max-dificil-lbl").innerText = contD;
             document.getElementById("sim-aviso-bloco").innerText = `Ativas: ${45 - contA}`;
 
-            // Ajusta os limites do input do simulador para respeitar a contagem real da prova
             document.getElementById("sim-facil").max = contF;
             document.getElementById("sim-medio").max = contM;
             document.getElementById("sim-dificil").max = contD;
@@ -888,15 +993,6 @@
             salvarConfigAreas(cfg);
             renderizarTabelaMapeamentoArea(areaKey, cfg[areaKey]);
             atualizarSimuladorLaboratorio();
-        }
-
-        function obterTotalAtivasAreaAtual() {
-            let areaKey = document.getElementById("select-area-laboratorio").value;
-            let cfg = obterConfigAreas();
-            let c = cfg[areaKey];
-            let anuladas = 0;
-            for (let i = 1; i <= 45; i++) { if (c.questoes[i] === 'anulada') anuladas++; }
-            return 45 - anuladas;
         }
 
         function ajustarAcertosSimulador(alterado) {
