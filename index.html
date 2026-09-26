@@ -3,19 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal do Aluno - Histórico de Simulados & Nuvem Local</title>
+    <title>Portal do Aluno - Histórico de Simulados & Nuvem Supabase</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    
-    <!-- Carregador dinâmico anti-cache do dados.js -->
-    <script>
-        (function() {
-            var script = document.createElement('script');
-            script.src = 'dados.js?v=' + new Date().getTime();
-            document.write(script.outerHTML);
-        })();
-    </script>
+    <!-- Biblioteca do Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         details summary::-webkit-details-marker { display: none; }
@@ -30,7 +23,7 @@
         <div id="tela-login" class="min-h-[85vh] flex items-center justify-center p-4">
             <div class="bg-white w-full max-w-md p-8 rounded-2xl shadow-xl border border-gray-200">
                 <div class="text-center mb-6">
-                    <h1 class="text-2xl font-bold text-blue-600">🎓 Portal do Aluno & Nuvem Local</h1>
+                    <h1 class="text-2xl font-bold text-blue-600">🎓 Portal do Aluno & Nuvem Supabase</h1>
                     <p class="text-xs text-gray-400 mt-1">Carneiro Softwares & Automação</p>
                 </div>
                 <div class="space-y-4">
@@ -185,13 +178,18 @@
     <!-- RODAPÉ DISCRETO COM INDICADOR DE VERSÃO / SINCRONIZAÇÃO -->
     <footer class="py-4 px-6 text-center text-[11px] text-gray-400 border-t border-gray-200 bg-white mt-12 flex justify-between items-center max-w-6xl mx-auto w-full">
         <span>Portal do Aluno - Carneiro Softwares & Automação</span>
-        <div class="flex items-center space-x-2 cursor-help" title="Indicador de Sincronização com a Nuvem Local">
+        <div class="flex items-center space-x-2 cursor-help" title="Indicador de Sincronização com o Supabase">
             <span id="indicador-status-nuvem" class="w-2.5 h-2.5 rounded-full bg-gray-300 inline-block"></span>
-            <span id="texto-versao-aluno" class="font-mono text-[10px]">v: Verificando...</span>
+            <span id="texto-versao-aluno" class="font-mono text-[10px]">Sync: Verificando...</span>
         </div>
     </footer>
 
     <script>
+        // Configuração do Supabase
+        const SUPABASE_URL = "https://ayclwucigtoufybvmtll.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_uXpJrC1SkAXsyqLqxqdFZw_RvEsxLXy";
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
         let alunoLogado = null;
         let simAtual = "1";
         let graficoAlunoInstance = null;
@@ -201,17 +199,28 @@
             const indicador = document.getElementById("indicador-status-nuvem");
             const txtVersao = document.getElementById("texto-versao-aluno");
 
-            if (window.SISTEMA_DADOS_SIMULADOS && window.SISTEMA_DADOS_SIMULADOS.localStorageBackup) {
-                let backup = window.SISTEMA_DADOS_SIMULADOS.localStorageBackup;
-                for (let k in backup) {
-                    localStorage.setItem(k, backup[k]);
+            try {
+                let { data, error } = await supabaseClient
+                    .from('dados_sistema')
+                    .select('*')
+                    .eq('id', 'estado_geral')
+                    .single();
+
+                if (data && data.conteudo) {
+                    let backup = data.conteudo;
+                    for (let k in backup) {
+                        localStorage.setItem(k, backup[k]);
+                    }
+                    if (indicador) indicador.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shadow-sm";
+                    if (txtVersao) txtVersao.innerText = "Sync: Nuvem Ativa (Supabase)";
+                    return data.conteudo;
+                } else {
+                    throw new Error("Nenhum dado encontrado na nuvem.");
                 }
-                indicador.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shadow-sm";
-                txtVersao.innerText = "Sync: OK (v." + (window.SISTEMA_DADOS_SIMULADOS.versao || "2.6") + ")";
-                return window.SISTEMA_DADOS_SIMULADOS;
-            } else {
-                indicador.className = "w-2.5 h-2.5 rounded-full bg-amber-500 inline-block shadow-sm";
-                txtVersao.innerText = "Sync: Local Offline";
+            } catch (err) {
+                console.warn("Aviso de sincronização com a nuvem:", err);
+                if (indicador) indicador.className = "w-2.5 h-2.5 rounded-full bg-amber-500 inline-block shadow-sm";
+                if (txtVersao) txtVersao.innerText = "Sync: Modo Local";
                 return null;
             }
         }
@@ -333,13 +342,6 @@
                 mat:  { base: 11.2, pesoDif: 25.0, teto: 1000, questoes: {} }
             };
             let chaveConfig = `config_areas_sim${sId}`;
-            if (window.SISTEMA_DADOS_SIMULADOS && window.SISTEMA_DADOS_SIMULADOS.localStorageBackup) {
-                if (window.SISTEMA_DADOS_SIMULADOS.localStorageBackup[chaveConfig]) {
-                    let configNuvem = window.SISTEMA_DADOS_SIMULADOS.localStorageBackup[chaveConfig];
-                    localStorage.setItem(chaveConfig, configNuvem);
-                    return JSON.parse(configNuvem);
-                }
-            }
             let configSalva = localStorage.getItem(chaveConfig);
             return configSalva ? JSON.parse(configSalva) : def;
         }
