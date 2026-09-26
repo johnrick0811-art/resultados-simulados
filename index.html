@@ -515,7 +515,7 @@
             document.getElementById("texto-presenca").innerText = presencaTexto;
 
             const tabelaQuestoesHTML = document.getElementById("tabela-questoes-aluno");
-            tabelaQuestoesHTML.innerHTML = "";
+            let linhasHTML = ""; // Acumulador de HTML para renderização instantânea
 
             function obterDado(reg, qNum) {
                 if (!reg) return { mark: 0, opt: '-' };
@@ -528,6 +528,7 @@
             let resAtual = calcularNotasAlunoParaSimulado(simAtual);
             if (!resAtual) return;
 
+            // 1º Dia (Q1 a Q90)
             if (reg1) {
                 for (let q = 1; q <= 90; q++) {
                     let area = q <= 45 ? 'ling' : 'hum';
@@ -541,18 +542,15 @@
                         else { statusBadge = '<span class="text-red-500 font-bold">Errou</span>'; }
                     } else { statusBadge = '<span class="text-gray-400">Não respondeu</span>'; }
 
-                    let tr = document.createElement("tr");
-                    tr.innerHTML = `<td class="px-4 py-2 font-semibold text-gray-700">Q${q}</td><td class="px-4 py-2">${dQ.opt}</td><td class="px-4 py-2">${statusBadge}</td>`;
-                    tabelaQuestoesHTML.appendChild(tr);
+                    linhasHTML += `<tr class="hover:bg-gray-50"><td class="px-4 py-2 font-semibold text-gray-700">Q${q}</td><td class="px-4 py-2 font-mono">${dQ.opt}</td><td class="px-4 py-2">${statusBadge}</td></tr>`;
                 }
             } else {
                 for (let q = 1; q <= 90; q++) {
-                    let tr = document.createElement("tr");
-                    tr.innerHTML = `<td class="px-4 py-2 font-semibold text-gray-700">Q${q}</td><td class="px-4 py-2">-</td><td class="px-4 py-2 text-gray-400 font-bold">Ausente</td>`;
-                    tabelaQuestoesHTML.appendChild(tr);
+                    linhasHTML += `<tr class="hover:bg-gray-50"><td class="px-4 py-2 font-semibold text-gray-700">Q${q}</td><td class="px-4 py-2">-</td><td class="px-4 py-2 text-gray-400 font-bold">Ausente</td></tr>`;
                 }
             }
 
+            // 2º Dia (Q91 a Q180)
             if (reg2) {
                 for (let qFile = 1; qFile <= 90; qFile++) {
                     let qReal = qFile + 90;
@@ -567,17 +565,16 @@
                         else { statusBadge2 = '<span class="text-red-500 font-bold">Errou</span>'; }
                     } else { statusBadge2 = '<span class="text-gray-400">Não respondeu</span>'; }
 
-                    let tr = document.createElement("tr");
-                    tr.innerHTML = `<td class="px-4 py-2 font-semibold text-gray-700">Q${qReal}</td><td class="px-4 py-2">${dQ2.opt}</td><td class="px-4 py-2">${statusBadge2}</td>`;
-                    tabelaQuestoesHTML.appendChild(tr);
+                    linhasHTML += `<tr class="hover:bg-gray-50"><td class="px-4 py-2 font-semibold text-gray-700">Q${qReal}</td><td class="px-4 py-2 font-mono">${dQ2.opt}</td><td class="px-4 py-2">${statusBadge2}</td></tr>`;
                 }
             } else {
                 for (let qReal = 91; qReal <= 180; qReal++) {
-                    let tr = document.createElement("tr");
-                    tr.innerHTML = `<td class="px-4 py-2 font-semibold text-gray-700">Q${qReal}</td><td class="px-4 py-2">-</td><td class="px-4 py-2 text-gray-400 font-bold">Ausente</td>`;
-                    tabelaQuestoesHTML.appendChild(tr);
+                    linhasHTML += `<tr class="hover:bg-gray-50"><td class="px-4 py-2 font-semibold text-gray-700">Q${qReal}</td><td class="px-4 py-2">-</td><td class="px-4 py-2 text-gray-400 font-bold">Ausente</td></tr>`;
                 }
             }
+
+            // Injeta todas as 180 linhas de uma única vez no DOM
+            tabelaQuestoesHTML.innerHTML = linhasHTML;
 
             let totalAcertos = resAtual.acertosLing + resAtual.acertosHum + resAtual.acertosNat + resAtual.acertosMat;
             document.getElementById("card-ling").innerText = resAtual.ling.toFixed(1);
@@ -626,7 +623,6 @@
 
             if (listaAlunosProcessada.length === 0) return;
 
-            // Ordenações para achar as posições
             let rGeral = [...listaAlunosProcessada].sort((a, b) => b.media - a.media);
             let rLing  = [...listaAlunosProcessada].sort((a, b) => b.ling - a.ling);
             let rHum   = [...listaAlunosProcessada].sort((a, b) => b.hum - a.hum);
@@ -646,7 +642,6 @@
             document.getElementById("pos-nat").innerText = `${idxNat}º`;
             document.getElementById("pos-mat").innerText = `${idxMat}º`;
 
-            // Mensagem de Incentivo Dinâmica baseada na colocação geral
             let iconeEl = document.getElementById("icone-incentivo");
             let tituloEl = document.getElementById("titulo-incentivo");
             let textoEl = document.getElementById("texto-incentivo");
