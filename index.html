@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal do Aluno - Histórico de Simulados & Nuvem</title>
+    <title>Portal do Aluno - Histórico de Simulados & Nuvem Local</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Inclui a ponte de nuvem -->
-    <script src="config-nuvem.js"></script>
+    <!-- Carrega o banco de dados local dados.js -->
+    <script src="dados.js"></script>
     <style>
         details summary::-webkit-details-marker { display: none; }
         details[open] summary .seta-gaveta { transform: rotate(180deg); }
@@ -20,8 +20,8 @@
     <div id="tela-login" class="min-h-screen flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-md p-8 rounded-2xl shadow-xl border border-gray-200">
             <div class="text-center mb-6">
-                <h1 class="text-2xl font-bold text-blue-600">🎓 Portal do Aluno & Nuvem</h1>
-                <p id="status-carregamento-nuvem" class="text-xs text-blue-500 mt-1 font-semibold">🔄 Sincronizando com a nuvem...</p>
+                <h1 class="text-2xl font-bold text-blue-600">🎓 Portal do Aluno & Nuvem Local</h1>
+                <p id="status-carregamento-nuvem" class="text-xs text-blue-500 mt-1 font-semibold">🔄 Carregando dados locais...</p>
             </div>
             <div class="space-y-4">
                 <div>
@@ -177,17 +177,24 @@
         let graficoAlunoInstance = null;
         let graficoHistoricoInstance = null;
 
+        // Ponte adaptada para carregar o arquivo dados.js local
+        async function carregarDadosDaNuvem() {
+            if (window.SISTEMA_DADOS_SIMULADOS && window.SISTEMA_DADOS_SIMULADOS.localStorageBackup) {
+                return window.SISTEMA_DADOS_SIMULADOS;
+            }
+            return null;
+        }
+
         window.onload = async function() {
-            // Sincroniza e puxa os dados da nuvem AGUARDANDO a resposta completa
             let dadosNuvem = await carregarDadosDaNuvem();
             if (dadosNuvem && dadosNuvem.localStorageBackup) {
                 for(let k in dadosNuvem.localStorageBackup) {
                     localStorage.setItem(k, dadosNuvem.localStorageBackup[k]);
                 }
-                document.getElementById("status-carregamento-nuvem").innerText = "✅ Sincronizado com sucesso!";
+                document.getElementById("status-carregamento-nuvem").innerText = "✅ Dados locais carregados!";
                 document.getElementById("status-carregamento-nuvem").className = "text-xs text-green-600 mt-1 font-semibold";
             } else {
-                document.getElementById("status-carregamento-nuvem").innerText = "⚠️ Modo offline ou dados indisponíveis";
+                document.getElementById("status-carregamento-nuvem").innerText = "⚠️ dados.js não encontrado ou vazio";
                 document.getElementById("status-carregamento-nuvem").className = "text-xs text-amber-600 mt-1 font-semibold";
             }
 
