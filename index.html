@@ -634,12 +634,17 @@
             });
         }
 
-        // --- GERAÇÃO DO BOLETIM EM PDF (COM LOGO E AUDITORIA) ---
+        // --- GERAÇÃO DO BOLETIM EM PDF (BLINDADA E CORRIGIDA) ---
         function gerarBoletimPDF() {
             if (!alunoLogado) return;
             let res = calcularNotasAlunoParaSimulado(simAtual);
             if (!res) {
                 alert("Não há notas calculadas para gerar o boletim.");
+                return;
+            }
+
+            if (!window.jspdf || !window.jspdf.jsPDF) {
+                alert("A biblioteca de PDF ainda está carregando. Aguarde um segundo e tente novamente.");
                 return;
             }
 
@@ -743,7 +748,8 @@
             doc.text("Documento gerado eletronicamente através do Portal do Aluno - Carneiro Softwares & Automação.", 14, 280);
             doc.text("Autenticado em: " + dataHoraFormatada, 14, 285);
 
-            doc.download("Boletim_" + simAtual + "Simulado_" + alunoLogado.nome.replace(/\s+/g, '_') + ".pdf");
+            let nomeArquivo = "Boletim_" + simAtual + "Simulado_" + alunoLogado.nome.replace(/\s+/g, '_') + ".pdf";
+            doc.save(nomeArquivo);
         }
     </script>
 </body>
