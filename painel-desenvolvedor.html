@@ -279,11 +279,9 @@
         async function publicarAutomaticoGitHub() {
             salvarCredenciaisGitHub();
             
-            // Garante que os dados da sessão atual estejam salvos no localStorage antes do pacote
             if (listaDados1Dia.length > 0) localStorage.setItem(`dados_1dia_sim${simAtual}`, JSON.stringify(listaDados1Dia));
             if (listaDados2Dia.length > 0) localStorage.setItem(`dados_2dia_sim${simAtual}`, JSON.stringify(listaDados2Dia));
 
-            // Garante que salvamentos pendentes do laboratório ou parâmetros atuais sejam consolidados
             salvarParametrosAreaAtual();
 
             let user = document.getElementById("gh-user").value.trim();
@@ -303,7 +301,8 @@
                 }
             }
 
-            let conteudoArquivo = `// dados.js - Banco de dados local dos simulados\nwindow.SISTEMA_DADOS_SIMULADOS = {\n    "status": "ativo",\n    "localStorageBackup": ` + JSON.stringify(dadosBackup, null, 4) + `\n};`;
+            // Timestamp injetado para forçar invalidação de cache
+            let conteudoArquivo = `// dados.js - Atualizado em: ${new Date().toISOString()}\nwindow.SISTEMA_DADOS_SIMULADOS = {\n    "status": "ativo",\n    "localStorageBackup": ` + JSON.stringify(dadosBackup, null, 4) + `\n};`;
 
             let path = "dados.js";
             let urlAPI = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
