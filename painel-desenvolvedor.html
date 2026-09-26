@@ -96,20 +96,6 @@
             </div>
         </div>
 
-        <!-- CONFIGURAÇÃO DE PESOS TRI -->
-        <div class="bg-indigo-50 p-6 rounded-xl border border-indigo-200 shadow-inner mb-8">
-            <div class="flex justify-between items-center mb-2">
-                <h3 class="text-lg font-bold text-indigo-900">⚙️ Multiplicadores Globais por Área (Base TRI)</h3>
-                <button onclick="abrirModalTRI()" class="text-xs font-bold text-indigo-700 hover:underline">Abrir Laboratório Avançado por Área ↗</button>
-            </div>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div><label class="block text-xs font-bold text-gray-700 mb-1">Linguagens</label><input type="number" id="peso-ling" step="0.1" value="1.0" onchange="salvarConfigTRI()" class="w-full px-3 py-1.5 border rounded text-sm"></div>
-                <div><label class="block text-xs font-bold text-gray-700 mb-1">Humanas</label><input type="number" id="peso-hum" step="0.1" value="1.0" onchange="salvarConfigTRI()" class="w-full px-3 py-1.5 border rounded text-sm"></div>
-                <div><label class="block text-xs font-bold text-gray-700 mb-1">Natureza</label><input type="number" id="peso-nat" step="0.1" value="1.0" onchange="salvarConfigTRI()" class="w-full px-3 py-1.5 border rounded text-sm"></div>
-                <div><label class="block text-xs font-bold text-gray-700 mb-1">Matemática</label><input type="number" id="peso-mat" step="0.1" value="1.0" onchange="salvarConfigTRI()" class="w-full px-3 py-1.5 border rounded text-sm"></div>
-            </div>
-        </div>
-
         <!-- BOTÕES DE AÇÃO COM AUTOMAÇÃO -->
         <div class="flex flex-col md:flex-row justify-center items-center gap-4 mb-8">
             <button onclick="publicarAutomaticoGitHub()" class="bg-emerald-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:bg-emerald-700 transition text-sm flex items-center gap-2">🚀 Salvar e Publicar Automaticamente</button>
@@ -117,7 +103,7 @@
         </div>
 
         <!-- AUDITORIA & LISTA DE ALUNOS COM BUSCA E FILTROS -->
-        <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-inner">
+        <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-inner mb-8">
             <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-3">
                 <h3 class="text-lg font-bold text-gray-700">📋 Lista de Alunos (Clique para inspecionar)</h3>
                 <div class="flex items-center space-x-2 w-full md:w-auto">
@@ -142,6 +128,29 @@
                     </thead>
                     <tbody id="tabela-auditoria" class="divide-y divide-gray-200 text-xs">
                         <tr><td colspan="7" class="px-4 py-4 text-center text-gray-400">Carregue as planilhas acima.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SEÇÃO: AUDITORIA DE DOWNLOADS DE BOLETINS DOS ALUNOS -->
+        <div class="bg-blue-50 p-6 rounded-xl border border-blue-200 shadow-inner">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-blue-900">📥 Auditoria de Emissão de Boletins (PDF)</h3>
+                <button onclick="carregarAuditoriaDownloads()" class="text-xs bg-white text-blue-700 border border-blue-300 px-3 py-1.5 rounded font-bold hover:bg-blue-100 transition">🔄 Atualizar Logs</button>
+            </div>
+            <div class="overflow-x-auto max-h-60 bg-white rounded-lg border shadow-sm">
+                <table class="min-w-full divide-y divide-gray-200 text-xs">
+                    <thead class="bg-gray-100 sticky top-0">
+                        <tr>
+                            <th class="px-4 py-2 text-left font-bold text-gray-600">Simulado</th>
+                            <th class="px-4 py-2 text-left font-bold text-gray-600">Turma</th>
+                            <th class="px-4 py-2 text-left font-bold text-gray-600">Aluno(a)</th>
+                            <th class="px-4 py-2 text-left font-bold text-gray-600">Data e Hora do Download</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-logs-downloads" class="divide-y divide-gray-200">
+                        <tr><td colspan="4" class="px-4 py-4 text-center text-gray-400">Nenhum boletim baixado registrado ainda.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -262,6 +271,7 @@
             carregarCredenciaisGitHub();
             carregarListaSimulados();
             carregarAuditoria();
+            carregarAuditoriaDownloads();
         };
 
         function carregarCredenciaisGitHub() {
@@ -301,7 +311,6 @@
                 }
             }
 
-            // Timestamp injetado para forçar invalidação de cache
             let conteudoArquivo = `// dados.js - Atualizado em: ${new Date().toISOString()}\nwindow.SISTEMA_DADOS_SIMULADOS = {\n    "status": "ativo",\n    "localStorageBackup": ` + JSON.stringify(dadosBackup, null, 4) + `\n};`;
 
             let path = "dados.js";
@@ -349,6 +358,7 @@
             }
 
             carregarAuditoria();
+            carregarAuditoriaDownloads();
         }
 
         function carregarListaSimulados() {
@@ -408,6 +418,7 @@
             document.getElementById("status-2dia").innerText = "Nenhum arquivo selecionado";
             atualizarBadgeStatus();
             carregarAuditoria();
+            carregarAuditoriaDownloads();
         }
 
         function atualizarBadgeStatus() {
@@ -682,6 +693,28 @@
             document.getElementById("stat-media-geral").innerText = totalValidos > 0 ? (somaMedias / totalValidos).toFixed(1) : "0.0";
             document.getElementById("stat-maior-nota").innerText = maior > 0 ? maior.toFixed(1) : "0.0";
             document.getElementById("stat-menor-nota").innerText = menor < 9999 ? menor.toFixed(1) : "0.0";
+        }
+
+        function carregarAuditoriaDownloads() {
+            let logs = JSON.parse(localStorage.getItem(`logs_downloads_sim${simAtual}`) || "[]");
+            const tbody = document.getElementById("tabela-logs-downloads");
+            tbody.innerHTML = "";
+
+            if (logs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-4 text-center text-gray-400">Nenhum boletim baixado registrado para o ${simAtual}º Simulado.</td></tr>`;
+                return;
+            }
+
+            logs.reverse().forEach(log => {
+                let tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td class="px-4 py-2 font-semibold text-blue-700">${log.simulado}º Simulado</td>
+                    <td class="px-4 py-2 font-semibold text-gray-700">${log.turma}</td>
+                    <td class="px-4 py-2 font-medium text-gray-800">${log.aluno}</td>
+                    <td class="px-4 py-2 text-gray-500">${log.dataHora}</td>
+                `;
+                tbody.appendChild(tr);
+            });
         }
 
         function inspecionarAluno(nomeAlvo, turmaAlvo, freq) {
