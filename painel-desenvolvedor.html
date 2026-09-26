@@ -333,7 +333,7 @@
         let simAtual = "1";
         let listaDados1Dia = [];
         let listaDados2Dia = [];
-        const VERSAO_SISTEMA = "v3.1.0";
+        let VERSAO_SISTEMA = "v3.1.0";
 
         window.onload = function() {
             carregarListaSimulados();
@@ -1041,7 +1041,6 @@
             document.getElementById("sim-resultado-nota").innerText = score.toFixed(1);
         }
 
-        // FUNÇÕES DE IMPORTAÇÃO E EXPORTAÇÃO DE NÍVEIS VIA XLSX
         function baixarModeloNiveisXLSX() {
             let dadosModelo = [];
             let areaKey = document.getElementById("select-area-laboratorio").value;
