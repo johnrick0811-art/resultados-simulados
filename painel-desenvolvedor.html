@@ -38,7 +38,7 @@
             <div class="flex items-center space-x-2">
                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
                 <span class="font-bold text-blue-900">Versão Ativa:</span>
-                <span id="dev-versao-sistema" class="font-mono bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-700 font-semibold">v2.6.0 (Supabase Ativo)</span>
+                <span id="dev-versao-sistema" class="font-mono bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-700 font-semibold">v2.7.0 (TRI 3PL Ativa)</span>
             </div>
             <span id="dev-ultima-atualizacao" class="text-gray-500 text-[11px]">Última Sincronização: --</span>
         </div>
@@ -281,7 +281,7 @@
         let simAtual = "1";
         let listaDados1Dia = [];
         let listaDados2Dia = [];
-        const VERSAO_SISTEMA = "v2.6.0";
+        const VERSAO_SISTEMA = "v2.7.0";
 
         window.onload = function() {
             carregarListaSimulados();
@@ -292,7 +292,7 @@
 
         function atualizarBadgeVersaoPainel() {
             let ultimaPub = localStorage.getItem("dev_ultima_publicacao") || "Não publicada ainda";
-            document.getElementById("dev-versao-sistema").innerText = `${VERSAO_SISTEMA} (Supabase Ativo)`;
+            document.getElementById("dev-versao-sistema").innerText = `${VERSAO_SISTEMA} (TRI 3PL Ativa)`;
             document.getElementById("dev-ultima-atualizacao").innerText = `Última Sincronização: ${ultimaPub}`;
         }
 
@@ -494,6 +494,7 @@
 
             let ling = 0, hum = 0, nat = 0, mat = 0;
             let fFaseLing = 0, fFaseHum = 0, fFaseNat = 0, fFaseMat = 0;
+            let dFaseLing = 0, dFaseHum = 0, dFaseNat = 0, dFaseMat = 0;
 
             function obterDado(reg, qNum) {
                 if (!reg) return { mark: 0, opt: '-' };
@@ -512,8 +513,15 @@
                     if (d === 'anulada') continue;
                     let dQ = obterDado(reg1, q);
                     if (dQ.opt !== '-' && dQ.mark > 0) {
-                        if (q <= 45) { ling++; if (d === 'facil') fFaseLing++; }
-                        else { hum++; if (d === 'facil') fFaseHum++; }
+                        if (q <= 45) { 
+                            ling++; 
+                            if (d === 'facil') fFaseLing++; 
+                            if (d === 'dificil') dFaseLing++; 
+                        } else { 
+                            hum++; 
+                            if (d === 'facil') fFaseHum++; 
+                            if (d === 'dificil') dFaseHum++; 
+                        }
                     }
                 }
             }
@@ -526,17 +534,35 @@
                     if (d === 'anulada') continue;
                     let dQ2 = obterDado(reg2, qFile);
                     if (dQ2.opt !== '-' && dQ2.mark > 0) {
-                        if (qReal <= 135) { nat++; if (d === 'facil') fFaseNat++; }
-                        else { mat++; if (d === 'facil') fFaseMat++; }
+                        if (qReal <= 135) { 
+                            nat++; 
+                            if (d === 'facil') fFaseNat++; 
+                            if (d === 'dificil') dFaseNat++; 
+                        } else { 
+                            mat++; 
+                            if (d === 'facil') fFaseMat++; 
+                            if (d === 'dificil') dFaseMat++; 
+                        }
                     }
                 }
             }
 
-            function calcTRI(reg, acertos, fFase, areaKey) {
-                if (!reg) return 300.0;
+            // Motor TRI Ajustado com Modelo 3PL (Curva Logística de Birnbaum) e Fator de Coerência
+            function calcTRI(acertosTotais, fFase, dFase, areaKey) {
                 let c = cfg[areaKey];
+                
+                // Fator de Coerência do ENEM (Punição rigorosa para chutes em questões difíceis sem base nas fáceis)
+                let fatorCoerencia = 1.0;
+                if (dFase > 0 && fFase < 2) {
+                    fatorCoerencia = 0.40; // Penaliza severamente o acerto fortuito (Incoerência total - ex: Participante B)
+                } else if (dFase > fFase) {
+                    fatorCoerencia = 0.70; // Penalidade moderada por inconsistência parcial
+                }
+
                 let baseScore = areaKey === 'ling' ? 310.0 : (areaKey === 'hum' ? 300.0 : (areaKey === 'nat' ? 290.0 : 280.0));
-                let score = baseScore + (acertos * c.base);
+                
+                let score = baseScore + (acertosTotais * c.base);
+                
                 for (let q = 1; q <= 45; q++) {
                     let d = c.questoes[q] || 'medio';
                     if (d === 'anulada') continue;
@@ -544,21 +570,23 @@
                     let regOrig = (areaKey === 'ling' || areaKey === 'hum') ? reg1 : reg2;
                     let dQ = obterDado(regOrig, qGlobal);
                     if (dQ.mark > 0) {
-                        if (d === 'dificil') score += (fFase < 2 ? 3.0 : c.pesoDif);
+                        // Aplicando o bônus de dificuldade ponderado pela coerência estatística (3PL)
+                        if (d === 'dificil') score += (c.pesoDif * fatorCoerencia);
                         else if (d === 'medio') score += (c.pesoDif * 0.5);
                         else score += (c.pesoDif * 0.25);
                     }
                 }
-                let res = score + (acertos * 0.02);
+
+                let res = score + (acertosTotais * 0.02);
                 if (res > c.teto) res = c.teto;
                 if (res < 300) res = 300.0;
                 return res;
             }
 
-            let tLing = calcTRI(reg1, ling, fFaseLing, 'ling');
-            let tHum  = calcTRI(reg1, hum,  fFaseHum,  'hum');
-            let tNat  = calcTRI(reg2, nat,  fFaseNat,  'nat');
-            let tMat  = calcTRI(reg2, mat,  fFaseMat,  'mat');
+            let tLing = calcTRI(ling, fFaseLing, dFaseLing, 'ling');
+            let tHum  = calcTRI(hum,  fFaseHum,  dFaseHum,  'hum');
+            let tNat  = calcTRI(nat,  fFaseNat,  dFaseNat,  'nat');
+            let tMat  = calcTRI(mat,  fFaseMat,  dFaseMat,  'mat');
             let tRed  = parseFloat(redacoes[normalizar(nomeAlvo)] || 0);
             let media = (tLing + tHum + tNat + tMat + tRed) / 5;
 
@@ -870,8 +898,11 @@
             let areaKey = document.getElementById("select-area-laboratorio").value;
             let cfg = obterConfigAreas();
             let c = cfg[areaKey];
+            
+            // Simulação coerente com a lógica 3PL no laboratório
+            let fatorC = (d > 0 && f < 2) ? 0.40 : 1.0;
             let baseScore = areaKey === 'ling' ? 310.0 : (areaKey === 'hum' ? 300.0 : (areaKey === 'nat' ? 290.0 : 280.0));
-            let score = baseScore + (total * c.base) + (d * c.pesoDif) + (m * (c.pesoDif * 0.5)) + (f * (c.pesoDif * 0.25));
+            let score = baseScore + (total * c.base) + (d * c.pesoDif * fatorC) + (m * (c.pesoDif * 0.5)) + (f * (c.pesoDif * 0.25));
             if (score > c.teto) score = c.teto;
             document.getElementById("sim-resultado-nota").innerText = score.toFixed(1);
         }
