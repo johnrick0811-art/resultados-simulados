@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal do Aluno - Histórico de Simulados & Nuvem Supabase</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Biblioteca do Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -66,6 +66,15 @@
             </header>
 
             <main class="max-w-6xl mx-auto p-6 space-y-6">
+                <!-- MENSAGEM DE INCENTIVO DINÂMICA -->
+                <div id="card-mensagem-incentivo" class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-5 rounded-xl shadow-md flex items-center space-x-4">
+                    <div id="icone-incentivo" class="text-3xl">🌟</div>
+                    <div>
+                        <h3 id="titulo-incentivo" class="font-bold text-base">Calculando sua trajetória...</h3>
+                        <p id="texto-incentivo" class="text-xs text-blue-100 mt-1">Analisando sua posição no simulado para trazer dicas personalizadas.</p>
+                    </div>
+                </div>
+
                 <!-- STATUS DE PARTICIPAÇÃO -->
                 <div id="status-presenca-box" class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
                     <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Status de Participação</p>
@@ -101,26 +110,66 @@
                     </div>
                 </div>
 
-                <!-- RESUMO E GRÁFICO DE BARRAS -->
+                <!-- PAINEL LATERAL DE COLOCAÇÃO E COMPARAÇÃO POR ÁREA (PRIVADO) -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col justify-between">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 md:col-span-1 flex flex-col justify-between space-y-4">
                         <div>
-                            <h3 class="font-bold text-gray-800 text-sm mb-2">📊 Resumo do Simulado</h3>
-                            <p class="text-xs text-gray-500">Desempenho Consolidado</p>
-                            <div class="my-6 text-center">
-                                <p id="resumo-total-acertos" class="text-4xl font-black text-blue-600">0</p>
-                                <p class="text-xs text-gray-500 font-semibold mt-1">acertos totais</p>
+                            <h3 class="font-bold text-gray-800 text-sm mb-1">🏅 Sua Colocação Privada</h3>
+                            <p class="text-[11px] text-gray-500 mb-4">Veja sua posição em relação ao grupo, com total privacidade (sem expor nomes de terceiros).</p>
+                            
+                            <div class="space-y-3">
+                                <div class="bg-blue-50 p-3 rounded-lg border border-blue-100 flex justify-between items-center">
+                                    <span class="text-xs font-bold text-blue-900">Média Geral (Enem)</span>
+                                    <span id="pos-geral" class="text-sm font-extrabold text-blue-700 bg-white px-2.5 py-1 rounded shadow-sm">-º de -</span>
+                                </div>
+                                <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-100 flex justify-between items-center">
+                                    <span class="text-xs font-bold text-indigo-900">Linguagens</span>
+                                    <span id="pos-ling" class="text-xs font-bold text-indigo-700 bg-white px-2.5 py-1 rounded shadow-sm">-º</span>
+                                </div>
+                                <div class="bg-green-50 p-3 rounded-lg border border-green-100 flex justify-between items-center">
+                                    <span class="text-xs font-bold text-green-900">Humanas</span>
+                                    <span id="pos-hum" class="text-xs font-bold text-green-700 bg-white px-2.5 py-1 rounded shadow-sm">-º</span>
+                                </div>
+                                <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-100 flex justify-between items-center">
+                                    <span class="text-xs font-bold text-yellow-900">Natureza</span>
+                                    <span id="pos-nat" class="text-xs font-bold text-yellow-700 bg-white px-2.5 py-1 rounded shadow-sm">-º</span>
+                                </div>
+                                <div class="bg-purple-50 p-3 rounded-lg border border-purple-100 flex justify-between items-center">
+                                    <span class="text-xs font-bold text-purple-900">Matemática</span>
+                                    <span id="pos-mat" class="text-xs font-bold text-purple-700 bg-white px-2.5 py-1 rounded shadow-sm">-º</span>
+                                </div>
                             </div>
                         </div>
-                        <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 text-center">
-                            <p class="text-[10px] font-bold text-blue-600 uppercase">Média Simples (Enem)</p>
-                            <p id="resumo-media-enem" class="text-2xl font-extrabold text-blue-900 mt-0.5">0.0</p>
+                        <div class="pt-2 border-t text-[11px] text-gray-400 text-center">
+                            Filtro aplicado: <span id="label-filtro-ranking" class="font-semibold text-gray-600">Geral da Escola</span>
                         </div>
                     </div>
 
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 md:col-span-2">
-                        <h3 class="font-bold text-gray-800 text-sm mb-4">📈 Desempenho por Área (Simulado Atual)</h3>
-                        <div class="relative h-64"><canvas id="graficoDesempenhoAluno"></canvas></div>
+                    <!-- RESUMO E GRÁFICO DE BARRAS -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 md:col-span-2 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="font-bold text-gray-800 text-sm">📊 Desempenho por Área (Simulado Atual)</h3>
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-xs font-semibold text-gray-600">Filtro Ranking:</span>
+                                    <select id="select-filtro-comparacao" onchange="carregarPainelAluno()" class="px-2.5 py-1 border rounded text-xs font-bold bg-gray-50 text-blue-700">
+                                        <option value="escola">Geral da Escola</option>
+                                        <option value="turma">Apenas da Minha Turma</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="relative h-56"><canvas id="graficoDesempenhoAluno"></canvas></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t">
+                            <div class="text-center">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase">Total Acertos</p>
+                                <p id="resumo-total-acertos" class="text-xl font-black text-blue-600">0</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase">Média Simples (Enem)</p>
+                                <p id="resumo-media-enem" class="text-xl font-extrabold text-blue-900">0.0</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -346,7 +395,7 @@
             return configSalva ? JSON.parse(configSalva) : def;
         }
 
-        function calcularNotasAlunoParaSimulado(sId) {
+        function calcularNotasAlunoParaSimuladoEspecifico(nomeAluno, turmaAluno, rollAluno, sId) {
             let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${sId}`) || "[]");
             let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${sId}`) || "[]");
             let redacoes = JSON.parse(localStorage.getItem(`notas_redacao_sim${sId}`) || "{}");
@@ -356,8 +405,8 @@
                     let nm = normalizar(item["Name"] || item["NAME"] || item["Nome"]);
                     let rNo = String(item["Roll No"] || item["ROLLNO"] || item["RollNo"] || "").trim();
                     let turma = String(item["Class"] || item["CLASS"] || item["Turma"] || "A").trim();
-                    return nm === normalizar(alunoLogado.nome) && turma === String(alunoLogado.turma).trim() && rNo === String(alunoLogado.roll).trim();
-                }) || lista.find(item => normalizar(item["Name"] || item["NAME"] || item["Nome"]) === normalizar(alunoLogado.nome));
+                    return nm === normalizar(nomeAluno) && turma === String(turmaAluno).trim() && rNo === String(rollAluno).trim();
+                }) || lista.find(item => normalizar(item["Name"] || item["NAME"] || item["Nome"]) === normalizar(nomeAluno));
             }
 
             let reg1 = alunoTemRespostas(acharReg(d1)) ? acharReg(d1) : null;
@@ -432,10 +481,15 @@
             let tHum  = calcTRI(reg1, hum,  fFaseHum,  'hum');
             let tNat  = calcTRI(reg2, nat,  fFaseNat,  'nat');
             let tMat  = calcTRI(reg2, mat,  fFaseMat,  'mat');
-            let tRed  = parseFloat(redacoes[normalizar(alunoLogado.nome)] || 0);
+            let tRed  = parseFloat(redacoes[normalizar(nomeAluno)] || 0);
             let media = (tLing + tHum + tNat + tMat + tRed) / 5;
 
-            return { ling: tLing, hum: tHum, nat: tNat, mat: tMat, red: tRed, media, acertosLing: ling, acertosHum: hum, acertosNat: nat, acertosMat: mat };
+            return { nome: nomeAluno, turma: turmaAluno, roll: rollAluno, ling: tLing, hum: tHum, nat: tNat, mat: tMat, red: tRed, media, acertosLing: ling, acertosHum: hum, acertosNat: nat, acertosMat: mat };
+        }
+
+        function calcularNotasAlunoParaSimulado(sId) {
+            if (!alunoLogado) return null;
+            return calcularNotasAlunoParaSimuladoEspecifico(alunoLogado.nome, alunoLogado.turma, alunoLogado.roll, sId);
         }
 
         function carregarPainelAluno() {
@@ -538,7 +592,82 @@
             document.getElementById("resumo-total-acertos").innerText = totalAcertos;
             document.getElementById("resumo-media-enem").innerText = resAtual.media.toFixed(1);
 
+            calcularRankingsPrivados(resAtual);
             atualizarGraficosAlunos(resAtual);
+        }
+
+        function calcularRankingsPrivados(resAtual) {
+            let tipoFiltro = document.getElementById("select-filtro-comparacao").value;
+            document.getElementById("label-filtro-ranking").innerText = tipoFiltro === 'escola' ? 'Geral da Escola' : `Apenas da Turma ${alunoLogado.turma}`;
+
+            let mapaAlunos = new Map();
+            let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${simAtual}`) || "[]");
+            let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${simAtual}`) || "[]");
+
+            function processarLista(lista) {
+                lista.forEach(item => {
+                    let nome = item["Name"] || item["NAME"] || item["Nome"] || "";
+                    if (!nome) return;
+                    let rNo = String(item["Roll No"] || item["ROLLNO"] || "").trim();
+                    let turma = item["Class"] || item["CLASS"] || item["Turma"] || "A";
+                    let chave = `${normalizar(nome)}_${turma}`;
+                    if (!mapaAlunos.has(chave)) mapaAlunos.set(chave, { nome, turma, roll: rNo });
+                });
+            }
+            processarLista(d1);
+            processarLista(d2);
+
+            let listaAlunosProcessada = [];
+            mapaAlunos.forEach(al => {
+                if (tipoFiltro === 'turma' && al.turma !== alunoLogado.turma) return;
+                let resAl = calcularNotasAlunoParaSimuladoEspecifico(al.nome, al.turma, al.roll, simAtual);
+                if (resAl) listaAlunosProcessada.push(resAl);
+            });
+
+            if (listaAlunosProcessada.length === 0) return;
+
+            // Ordenações para achar as posições
+            let rGeral = [...listaAlunosProcessada].sort((a, b) => b.media - a.media);
+            let rLing  = [...listaAlunosProcessada].sort((a, b) => b.ling - a.ling);
+            let rHum   = [...listaAlunosProcessada].sort((a, b) => b.hum - a.hum);
+            let rNat   = [...listaAlunosProcessada].sort((a, b) => b.nat - a.nat);
+            let rMat   = [...listaAlunosProcessada].sort((a, b) => b.mat - a.mat);
+
+            let idxGeral = rGeral.findIndex(a => normalizar(a.nome) === normalizar(alunoLogado.nome)) + 1;
+            let idxLing  = rLing.findIndex(a => normalizar(a.nome) === normalizar(alunoLogado.nome)) + 1;
+            let idxHum   = rHum.findIndex(a => normalizar(a.nome) === normalizar(alunoLogado.nome)) + 1;
+            let idxNat   = rNat.findIndex(a => normalizar(a.nome) === normalizar(alunoLogado.nome)) + 1;
+            let idxMat   = rMat.findIndex(a => normalizar(a.nome) === normalizar(alunoLogado.nome)) + 1;
+            let totalGrupo = listaAlunosProcessada.length;
+
+            document.getElementById("pos-geral").innerText = `${idxGeral}º de ${totalGrupo}`;
+            document.getElementById("pos-ling").innerText = `${idxLing}º`;
+            document.getElementById("pos-hum").innerText = `${idxHum}º`;
+            document.getElementById("pos-nat").innerText = `${idxNat}º`;
+            document.getElementById("pos-mat").innerText = `${idxMat}º`;
+
+            // Mensagem de Incentivo Dinâmica baseada na colocação geral
+            let iconeEl = document.getElementById("icone-incentivo");
+            let tituloEl = document.getElementById("titulo-incentivo");
+            let textoEl = document.getElementById("texto-incentivo");
+            let cardMsg = document.getElementById("card-mensagem-incentivo");
+
+            if (idxGeral <= 10) {
+                cardMsg.className = "bg-gradient-to-r from-amber-500 to-orange-600 text-white p-5 rounded-xl shadow-md flex items-center space-x-4";
+                iconeEl.innerText = "🏆";
+                tituloEl.innerText = `Meus parabéns, ${alunoLogado.nome.split(' ')[0]}! Você faz parte dos 10 primeiros colocados!`;
+                textoEl.innerText = `Sua dedicação está trazendo resultados excepcionais. Continue focado para manter o topo rumo à aprovação!`;
+            } else if (idxGeral <= Math.ceil(totalGrupo * 0.3)) {
+                cardMsg.className = "bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-5 rounded-xl shadow-md flex items-center space-x-4";
+                iconeEl.innerText = "🚀";
+                tituloEl.innerText = `Excelente desempenho, ${alunoLogado.nome.split(' ')[0]}! Você está no topo do grupo!`;
+                textoEl.innerText = `Você está muito bem posicionado. Analise os detalhes das questões para alcançar as posições de destaque máximo!`;
+            } else {
+                cardMsg.className = "bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-5 rounded-xl shadow-md flex items-center space-x-4";
+                iconeEl.innerText = "💡";
+                tituloEl.innerText = `Continue firme na jornada, ${alunoLogado.nome.split(' ')[0]}! Cada simulado é um degrau a mais.`;
+                textoEl.innerText = `O treinamento constante é o segredo do sucesso no ENEM. Use o painel de questões para revisar seus erros e crescer forte!`;
+            }
         }
 
         function atualizarGraficosAlunos(resAtual) {
@@ -641,7 +770,7 @@
             doc.text("Data de Emissão: " + dataHoraFormatada, 120, 60);
 
             doc.setLineWidth(0.5);
-            doc.setDrawColor(200, 200, 200); // Corrigido de setDrawingColor para setDrawColor
+            doc.setDrawColor(200, 200, 200);
             doc.line(14, 66, 196, 66);
 
             doc.setFontSize(11);
