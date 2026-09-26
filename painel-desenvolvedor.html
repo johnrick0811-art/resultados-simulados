@@ -25,7 +25,7 @@
                 <label class="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg font-semibold text-xs hover:bg-gray-300 transition cursor-pointer">
                     📤 Restaurar <input type="file" id="file-backup" accept=".json" onchange="importarBackupJSON(event)" class="hidden">
                 </label>
-                <a href="PAINEL DO ALUNO.html" target="_blank" class="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-blue-200 transition">🔗 Portal do Aluno</a>
+                <a href="index.html" target="_blank" class="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-blue-200 transition">🔗 Portal do Aluno</a>
             </div>
         </header>
 
@@ -265,11 +265,14 @@
 
         async function sincronizarComNuvemManual() {
             let dadosBackup = {};
-            for(let i=0; i<localStorage.length; i++) {
+            for(let i = 0; i < localStorage.length; i++) {
                 let key = localStorage.key(i);
                 dadosBackup[key] = localStorage.getItem(key);
             }
-            await salvarDadosNaNuvem({ localStorageBackup: dadosBackup, ultimaAtualizacao: new Date().toISOString() });
+            await salvarDadosNaNuvem({ 
+                localStorageBackup: dadosBackup, 
+                ultimaAtualizacao: new Date().toISOString() 
+            });
             alert("Dados sincronizados com sucesso na nuvem para os alunos!");
         }
 
@@ -794,7 +797,6 @@
         function atualizarSimuladorLaboratorio() {
             salvarParametrosAreaAtual();
             let maxTotal = obterTotalAtivasAreaAtual();
-            document.getElementById("max-questoes-bloco").innerText = maxTotal;
             document.getElementById("sim-aviso-bloco").innerText = `Ativas: ${maxTotal}`;
             let f = parseInt(document.getElementById("sim-facil").value) || 0;
             let m = parseInt(document.getElementById("sim-medio").value) || 0;
@@ -847,7 +849,7 @@
 
         function exportarBackupJSON() {
             let dadosBackup = {};
-            for(let i=0; i<localStorage.length; i++) {
+            for(let i = 0; i < localStorage.length; i++) {
                 let key = localStorage.key(i);
                 dadosBackup[key] = localStorage.getItem(key);
             }
