@@ -38,7 +38,7 @@
             <div class="flex items-center space-x-2">
                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
                 <span class="font-bold text-blue-900">Versão Ativa:</span>
-                <span id="dev-versao-sistema" class="font-mono bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-700 font-semibold">v2.9.0 (Filtros & Exportação XLSX)</span>
+                <span id="dev-versao-sistema" class="font-mono bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-700 font-semibold">v3.0.0 (Importação de Níveis por XLSX)</span>
             </div>
             <span id="dev-ultima-atualizacao" class="text-gray-500 text-[11px]">Última Sincronização: --</span>
         </div>
@@ -116,7 +116,6 @@
                 </button>
             </div>
 
-            <!-- BARRA DE FILTRAGEM E ORDENAÇÃO AVANÇADA -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4 bg-white p-4 rounded-xl border shadow-sm">
                 <div>
                     <label class="block text-[11px] font-bold text-gray-600 mb-1">🔍 Buscar Aluno</label>
@@ -287,19 +286,29 @@
                         </div>
                     </div>
                 </div>
-                <div class="bg-white p-5 rounded-xl border shadow-sm">
-                    <div class="flex flex-col md:flex-row justify-between items-center mb-3 gap-2">
+                <!-- MAPEAMENTO DE DIFICULDADE & IMPORTAÇÃO XLSX -->
+                <div class="bg-white p-5 rounded-xl border shadow-sm space-y-4">
+                    <div class="flex flex-col md:flex-row justify-between items-center gap-3 border-b pb-3">
                         <div>
                             <h3 class="font-bold text-gray-800 text-sm">🎯 Mapeamento de Dificuldade & Anulações</h3>
-                            <p class="text-xs text-gray-500">Classifique as 45 questões. O painel contabiliza automaticamente os limites para o simulador.</p>
+                            <p class="text-xs text-gray-500">Configure as 45 questões manualmente ou importe via planilha XLSX.</p>
                         </div>
-                        <div class="flex items-center space-x-2 text-xs font-bold">
-                            <span class="bg-green-100 text-green-800 px-2 py-1 rounded">🟢 Fáceis: <span id="contador-facil-map">0</span></span>
-                            <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded">🟡 Médias: <span id="contador-medio-map">0</span></span>
-                            <span class="bg-red-100 text-red-800 px-2 py-1 rounded">🔴 Difíceis: <span id="contador-dificil-map">0</span></span>
-                            <span class="bg-gray-200 text-gray-700 px-2 py-1 rounded">🚫 Anuladas: <span id="contador-anulada-map">0</span></span>
+                        <div class="flex items-center space-x-2 flex-wrap gap-2">
+                            <button onclick="baixarModeloNiveisXLSX()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold transition">📥 Baixar Modelo XLSX</button>
+                            <label class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer shadow">
+                                📤 Importar Níveis (XLSX) <input type="file" id="file-import-niveis" accept=".xlsx,.xls" onchange="importarNiveisXLSX(event)" class="hidden">
+                            </label>
+                            <button onclick="exportarNiveisAtualXLSX()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow">💾 Exportar Atuais</button>
                         </div>
                     </div>
+
+                    <div class="flex items-center space-x-3 text-xs font-bold">
+                        <span class="bg-green-100 text-green-800 px-2.5 py-1 rounded">🟢 Fáceis: <span id="contador-facil-map">0</span></span>
+                        <span class="bg-yellow-100 text-yellow-800 px-2.5 py-1 rounded">🟡 Médias: <span id="contador-medio-map">0</span></span>
+                        <span class="bg-red-100 text-red-800 px-2.5 py-1 rounded">🔴 Difíceis: <span id="contador-dificil-map">0</span></span>
+                        <span class="bg-gray-200 text-gray-700 px-2.5 py-1 rounded">🚫 Anuladas: <span id="contador-anulada-map">0</span></span>
+                    </div>
+
                     <div class="overflow-x-auto max-h-60 border rounded-lg">
                         <table class="min-w-full divide-y divide-gray-200 text-xs">
                             <thead class="bg-gray-100 sticky top-0"><tr><th class="px-4 py-2 text-left">Questão</th><th class="px-4 py-2 text-left">Status</th></tr></thead>
@@ -324,7 +333,7 @@
         let simAtual = "1";
         let listaDados1Dia = [];
         let listaDados2Dia = [];
-        const VERSAO_SISTEMA = "v2.9.0";
+        const VERSAO_SISTEMA = "v3.0.0";
 
         window.onload = function() {
             carregarListaSimulados();
@@ -335,7 +344,7 @@
 
         function atualizarBadgeVersaoPainel() {
             let ultimaPub = localStorage.getItem("dev_ultima_publicacao") || "Não publicada ainda";
-            document.getElementById("dev-versao-sistema").innerText = `${VERSAO_SISTEMA} (Filtros & Exportação XLSX)`;
+            document.getElementById("dev-versao-sistema").innerText = `${VERSAO_SISTEMA} (Importação XLSX Ativa)`;
             document.getElementById("dev-ultima-atualizacao").innerText = `Última Sincronização: ${ultimaPub}`;
         }
 
@@ -556,15 +565,8 @@
                     if (d === 'anulada') continue;
                     let dQ = obterDado(reg1, q);
                     if (dQ.opt !== '-' && dQ.mark > 0) {
-                        if (q <= 45) { 
-                            ling++; 
-                            if (d === 'facil') fFaseLing++; 
-                            if (d === 'dificil') dFaseLing++; 
-                        } else { 
-                            hum++; 
-                            if (d === 'facil') fFaseHum++; 
-                            if (d === 'dificil') dFaseHum++; 
-                        }
+                        if (q <= 45) { ling++; if (d === 'facil') fFaseLing++; if (d === 'dificil') dFaseLing++; }
+                        else { hum++; if (d === 'facil') fFaseHum++; if (d === 'dificil') dFaseHum++; }
                     }
                 }
             }
@@ -577,15 +579,8 @@
                     if (d === 'anulada') continue;
                     let dQ2 = obterDado(reg2, qFile);
                     if (dQ2.opt !== '-' && dQ2.mark > 0) {
-                        if (qReal <= 135) { 
-                            nat++; 
-                            if (d === 'facil') fFaseNat++; 
-                            if (d === 'dificil') dFaseNat++; 
-                        } else { 
-                            mat++; 
-                            if (d === 'facil') fFaseMat++; 
-                            if (d === 'dificil') dFaseMat++; 
-                        }
+                        if (qReal <= 135) { nat++; if (d === 'facil') fFaseNat++; if (d === 'dificil') dFaseNat++; }
+                        else { mat++; if (d === 'facil') fFaseMat++; if (d === 'dificil') dFaseMat++; }
                     }
                 }
             }
@@ -695,7 +690,6 @@
                 selectTurma.appendChild(opt);
             });
 
-            // Aplicar Filtros
             let termoBusca = normalizar(document.getElementById("filtro-nome").value);
             let turmaFiltro = document.getElementById("filtro-turma").value;
             let criterioOrdenacao = document.getElementById("ordenacao-tabela").value;
@@ -706,7 +700,6 @@
                 return true;
             });
 
-            // Aplicar Ordenação
             filtrados.sort((a, b) => {
                 if (criterioOrdenacao === 'nome') return a.nome.localeCompare(b.nome);
                 if (criterioOrdenacao === 'media_desc') return b.media - a.media;
@@ -1039,6 +1032,75 @@
             let score = baseScore + (total * c.base) + (d * c.pesoDif * fatorC) + (m * (c.pesoDif * 0.5)) + (f * (c.pesoDif * 0.25));
             if (score > c.teto) score = c.teto;
             document.getElementById("sim-resultado-nota").innerText = score.toFixed(1);
+        }
+
+        // FUNÇÕES DE IMPORTAÇÃO E EXPORTAÇÃO DE NÍVEIS VIA XLSX
+        function baixarModeloNiveisXLSX() {
+            let dadosModelo = [];
+            let areaKey = document.getElementById("select-area-laboratorio").value;
+            let inicioQ = areaKey === 'ling' ? 1 : (areaKey === 'hum' ? 46 : (areaKey === 'nat' ? 91 : 136));
+
+            for (let i = 1; i <= 45; i++) {
+                dadosModelo.push({
+                    "Questao": `Q${inicioQ + i - 1}`,
+                    "Nivel (F, M, D ou Anulada)": "medio"
+                });
+            }
+
+            let worksheet = XLSX.utils.json_to_sheet(dadosModelo);
+            let workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Modelo_Niveis");
+            XLSX.writeFile(workbook, `Modelo_Niveis_${areaKey.toUpperCase()}.xlsx`);
+        }
+
+        function exportarNiveisAtualXLSX() {
+            let areaKey = document.getElementById("select-area-laboratorio").value;
+            let cfg = obterConfigAreas();
+            let c = cfg[areaKey];
+            let inicioQ = areaKey === 'ling' ? 1 : (areaKey === 'hum' ? 46 : (areaKey === 'nat' ? 91 : 136));
+
+            let dadosExport = [];
+            for (let i = 1; i <= 45; i++) {
+                dadosExport.push({
+                    "Questao": `Q${inicioQ + i - 1}`,
+                    "Nivel": c.questoes[i] || "medio"
+                });
+            }
+
+            let worksheet = XLSX.utils.json_to_sheet(dadosExport);
+            let workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Niveis_Atuais");
+            XLSX.writeFile(workbook, `Niveis_Configurados_${areaKey.toUpperCase()}.xlsx`);
+        }
+
+        async function importarNiveisXLSX(event) {
+            let file = event.target.files[0];
+            if (!file) return;
+
+            let data = await file.arrayBuffer();
+            let workbook = XLSX.read(data, {type: 'array'});
+            let json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+
+            let areaKey = document.getElementById("select-area-laboratorio").value;
+            let cfg = obterConfigAreas();
+
+            json.forEach((row, index) => {
+                if (index < 45) {
+                    let val = String(row["Nivel"] || row["Nivel (F, M, D ou Anulada)"] || row["nivel"] || "medio").trim().toLowerCase();
+                    let nivelMapeado = "medio";
+                    if (val.startsWith("f") || val === "facil") nivelMapeado = "facil";
+                    else if (val.startsWith("d") || val === "dificil") nivelMapeado = "dificil";
+                    else if (val.startsWith("a") || val === "anulada") nivelMapeado = "anulada";
+
+                    cfg[areaKey].questoes[index + 1] = nivelMapeado;
+                }
+            });
+
+            salvarConfigAreas(cfg);
+            renderizarTabelaMapeamentoArea(areaKey, cfg[areaKey]);
+            atualizarSimuladorLaboratorio();
+            document.getElementById("file-import-niveis").value = "";
+            alert("✅ Níveis importados com sucesso!");
         }
 
         function exportarBackupJSON() {
