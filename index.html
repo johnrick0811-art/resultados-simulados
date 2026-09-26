@@ -177,9 +177,13 @@
         let graficoAlunoInstance = null;
         let graficoHistoricoInstance = null;
 
-        // Ponte adaptada para carregar o arquivo dados.js local
+        // Carrega e sincroniza o dados.js forçando a atualização no localStorage do aluno
         async function carregarDadosDaNuvem() {
             if (window.SISTEMA_DADOS_SIMULADOS && window.SISTEMA_DADOS_SIMULADOS.localStorageBackup) {
+                let backup = window.SISTEMA_DADOS_SIMULADOS.localStorageBackup;
+                for (let k in backup) {
+                    localStorage.setItem(k, backup[k]);
+                }
                 return window.SISTEMA_DADOS_SIMULADOS;
             }
             return null;
@@ -188,10 +192,7 @@
         window.onload = async function() {
             let dadosNuvem = await carregarDadosDaNuvem();
             if (dadosNuvem && dadosNuvem.localStorageBackup) {
-                for(let k in dadosNuvem.localStorageBackup) {
-                    localStorage.setItem(k, dadosNuvem.localStorageBackup[k]);
-                }
-                document.getElementById("status-carregamento-nuvem").innerText = "✅ Dados locais carregados!";
+                document.getElementById("status-carregamento-nuvem").innerText = "✅ Dados e TRI atualizados!";
                 document.getElementById("status-carregamento-nuvem").className = "text-xs text-green-600 mt-1 font-semibold";
             } else {
                 document.getElementById("status-carregamento-nuvem").innerText = "⚠️ dados.js não encontrado ou vazio";
@@ -313,6 +314,7 @@
             return String(txt || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
         }
 
+        // Leitura dinâmica e garantida das configurações da TRI atualizadas no laboratório
         function obterConfigAreasSimulado(sId) {
             let def = {
                 ling: { base: 6.8, pesoDif: 9.5, teto: 1000, questoes: {} },
@@ -321,17 +323,18 @@
                 mat:  { base: 11.2, pesoDif: 25.0, teto: 1000, questoes: {} }
             };
 
-            let configSalva = localStorage.getItem(`config_areas_sim${sId}`);
-
-            // Prioridade para as configurações atualizadas via dados.js da nuvem
+            let chaveConfig = `config_areas_sim${sId}`;
+            
+            // Verifica primeiro se veio direto da nuvem atualizada no dados.js
             if (window.SISTEMA_DADOS_SIMULADOS && window.SISTEMA_DADOS_SIMULADOS.localStorageBackup) {
-                let chaveNuvem = `config_areas_sim${sId}`;
-                if (window.SISTEMA_DADOS_SIMULADOS.localStorageBackup[chaveNuvem]) {
-                    configSalva = window.SISTEMA_DADOS_SIMULADOS.localStorageBackup[chaveNuvem];
-                    localStorage.setItem(chaveNuvem, configSalva);
+                if (window.SISTEMA_DADOS_SIMULADOS.localStorageBackup[chaveConfig]) {
+                    let configNuvem = window.SISTEMA_DADOS_SIMULADOS.localStorageBackup[chaveConfig];
+                    localStorage.setItem(chaveConfig, configNuvem);
+                    return JSON.parse(configNuvem);
                 }
             }
 
+            let configSalva = localStorage.getItem(chaveConfig);
             return configSalva ? JSON.parse(configSalva) : def;
         }
 
