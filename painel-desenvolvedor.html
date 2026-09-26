@@ -38,7 +38,7 @@
             <div class="flex items-center space-x-2">
                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
                 <span class="font-bold text-blue-900">Versão Ativa:</span>
-                <span id="dev-versao-sistema" class="font-mono bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-700 font-semibold">v3.4.6 (Completo)</span>
+                <span id="dev-versao-sistema" class="font-mono bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-700 font-semibold">v3.4.7 (Robust)</span>
             </div>
             <span id="dev-ultima-atualizacao" class="text-gray-500 text-[11px]">Última Sincronização: --</span>
         </div>
@@ -328,7 +328,7 @@
         let simAtual = "1";
         let listaDados1Dia = [];
         let listaDados2Dia = [];
-        const VERSAO_SISTEMA = "v3.4.6";
+        const VERSAO_SISTEMA = "v3.4.7";
 
         window.onload = function() {
             carregarListaSimulados();
@@ -339,8 +339,73 @@
 
         function atualizarBadgeVersaoPainel() {
             let ultimaPub = localStorage.getItem("dev_ultima_publicacao") || "Não publicada ainda";
-            document.getElementById("dev-versao-sistema").innerText = `${VERSAO_SISTEMA} (Completo)`;
+            document.getElementById("dev-versao-sistema").innerText = `${VERSAO_SISTEMA} (Robust)`;
             document.getElementById("dev-ultima-atualizacao").innerText = `Última Sincronização: ${ultimaPub}`;
+        }
+
+        function normalizar(txt) {
+            return String(txt || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
+        }
+
+        function alunoTemRespostas(reg) {
+            if (!reg) return false;
+            for (let q = 1; q <= 90; q++) {
+                let opt = reg[`Q ${q} Options`] !== undefined ? reg[`Q ${q} Options`] : reg[`Q${q} Options`];
+                if (opt !== undefined && opt !== null && String(opt).trim() !== "" && String(opt).trim() !== "-") return true;
+            }
+            return Number(reg["Correct Answers"] || reg["Acertos"] || 0) > 0;
+        }
+
+        // CORREÇÃO ROBUSTA: Varre 100% dos alunos do 1º e 2º dias sem duplicar e sem perder nenhum
+        function obterAlunosProcessados() {
+            let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${simAtual}`) || "[]");
+            let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${simAtual}`) || "[]");
+
+            let mapaAlunos = new Map();
+
+            function processarLista(lista) {
+                lista.forEach(item => {
+                    let nome = item["Name"] || item["NAME"] || item["Nome"] || "";
+                    if (!nome || String(nome).trim() === "") return;
+                    let nomeNorm = normalizar(nome);
+                    let rNo = String(item["Roll No"] || item["ROLLNO"] || item["RollNo"] || "").trim();
+                    let rNoLimpo = rNo !== "" && rNo !== "undefined" ? String(Number(rNo)) : "-";
+                    let turma = String(item["Class"] || item["CLASS"] || item["Turma"] || "A").trim().toUpperCase();
+                    
+                    let chave = `${nomeNorm}_${turma}`;
+                    if (!mapaAlunos.has(chave)) {
+                        mapaAlunos.set(chave, { roll: rNoLimpo, turma: turma, nome: String(nome).trim() });
+                    } else {
+                        // Atualiza roll caso o anterior estivesse vazio ou dash
+                        let atual = mapaAlunos.get(chave);
+                        if (atual.roll === "-" && rNoLimpo !== "-") {
+                            atual.roll = rNoLimpo;
+                        }
+                    }
+                });
+            }
+
+            processarLista(d1);
+            processarLista(d2);
+
+            let lista = [];
+            mapaAlunos.forEach(aluno => {
+                let notasCalc = calcularNotasAlunoDesenvolvedor(aluno.nome, aluno.turma, aluno.roll, simAtual);
+                if (notasCalc) {
+                    lista.push({
+                        chamada: aluno.roll || "-",
+                        turma: aluno.turma,
+                        nome: aluno.nome,
+                        ling: notasCalc.ling,
+                        hum: notasCalc.hum,
+                        nat: notasCalc.nat,
+                        mat: notasCalc.mat,
+                        red: notasCalc.red,
+                        media: notasCalc.media
+                    });
+                }
+            });
+            return lista;
         }
 
         function gerarPreCalculoAlunosParaNuvem(sId) {
@@ -351,13 +416,15 @@
             function processarLista(lista) {
                 lista.forEach(item => {
                     let nome = item["Name"] || item["NAME"] || item["Nome"] || "";
-                    if (!nome) return;
+                    if (!nome || String(nome).trim() === "") return;
                     let nomeNorm = normalizar(nome);
                     let rNo = String(item["Roll No"] || item["ROLLNO"] || item["RollNo"] || "").trim();
-                    let rNoLimpo = rNo !== "" ? String(Number(rNo)) : "-";
+                    let rNoLimpo = rNo !== "" && rNo !== "undefined" ? String(Number(rNo)) : "-";
                     let turma = String(item["Class"] || item["CLASS"] || item["Turma"] || "A").trim().toUpperCase();
                     let chave = `${nomeNorm}_${turma}`;
-                    if (!mapaAlunos.has(chave)) mapaAlunos.set(chave, { nome, turma, roll: rNoLimpo });
+                    if (!mapaAlunos.has(chave)) {
+                        mapaAlunos.set(chave, { nome: String(nome).trim(), turma, roll: rNoLimpo });
+                    }
                 });
             }
             processarLista(d1);
@@ -437,15 +504,6 @@
             localStorage.setItem(`pre_calculo_alunos_sim_${sId}`, JSON.stringify(cacheAlunosSimulado));
         }
 
-        function alunoTemRespostas(reg) {
-            if (!reg) return false;
-            for (let q = 1; q <= 90; q++) {
-                let opt = reg[`Q ${q} Options`] !== undefined ? reg[`Q ${q} Options`] : reg[`Q${q} Options`];
-                if (opt !== undefined && opt !== null && String(opt).trim() !== "" && String(opt).trim() !== "-") return true;
-            }
-            return Number(reg["Correct Answers"] || reg["Acertos"] || 0) > 0;
-        }
-
         function obterConfigAreasSimulado(sId) {
             let def = {
                 ling: { base: 6.8, pesoDif: 9.5, teto: 1000, questoes: {} },
@@ -458,21 +516,35 @@
             return configSalva ? JSON.parse(configSalva) : def;
         }
 
+        // CORREÇÃO ROBUSTA: Busca exata de registros considerando nome normalizado e turma
         function calcularNotasAlunoDesenvolvedor(nomeAluno, turmaAluno, rollAluno, sId) {
             let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${sId}`) || "[]");
             let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${sId}`) || "[]");
             let redacoes = JSON.parse(localStorage.getItem(`notas_redacao_sim${sId}`) || "{}");
 
+            let nomeNormTarget = normalizar(nomeAluno);
+            let turmaTarget = String(turmaAluno || "").trim().toUpperCase();
+
             function acharReg(lista) {
-                return lista.find(item => {
+                // 1. Tenta match exato por nome normalizado E turma
+                let exato = lista.find(item => {
                     let nm = normalizar(item["Name"] || item["NAME"] || item["Nome"]);
-                    let turma = String(item["Class"] || item["CLASS"] || item["Turma"] || "A").trim();
-                    return nm === normalizar(nomeAluno) && turma === String(turmaAluno).trim();
-                }) || lista.find(item => normalizar(item["Name"] || item["NAME"] || item["Nome"]) === normalizar(nomeAluno));
+                    let t = String(item["Class"] || item["CLASS"] || item["Turma"] || "A").trim().toUpperCase();
+                    return nm === nomeNormTarget && t === turmaTarget;
+                });
+                if (exato) return exato;
+
+                // 2. Tenta match por nome normalizado apenas
+                let porNome = lista.find(item => {
+                    let nm = normalizar(item["Name"] || item["NAME"] || item["Nome"]);
+                    return nm === nomeNormTarget;
+                });
+                return porNome || null;
             }
 
-            let reg1 = alunoTemRespostas(acharReg(d1)) ? acharReg(d1) : null;
-            let reg2 = alunoTemRespostas(acharReg(d2)) ? acharReg(d2) : null;
+            let reg1 = acharReg(d1);
+            let reg2 = acharReg(d2);
+
             if (!reg1 && !reg2) return null;
 
             let ling = 0, hum = 0, nat = 0, mat = 0;
@@ -714,53 +786,6 @@
 
         function salvarConfigAreas(config) {
             localStorage.setItem(`config_areas_sim${simAtual}`, JSON.stringify(config));
-        }
-
-        function normalizar(txt) {
-            return String(txt || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
-        }
-
-        function obterAlunosProcessados() {
-            let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${simAtual}`) || "[]");
-            let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${simAtual}`) || "[]");
-
-            let mapaAlunos = new Map();
-            function processarLista(lista) {
-                lista.forEach(item => {
-                    let nome = item["Name"] || item["NAME"] || item["Nome"] || "";
-                    if (!nome) return;
-                    let nomeNorm = normalizar(nome);
-                    let rNo = String(item["Roll No"] || item["ROLLNO"] || item["RollNo"] || "").trim();
-                    let rNoLimpo = rNo !== "" ? String(Number(rNo)) : "-";
-                    let turma = String(item["Class"] || item["CLASS"] || item["Turma"] || "A").trim().toUpperCase();
-                    
-                    let chave = `${nomeNorm}_${turma}`;
-                    if (!mapaAlunos.has(chave)) {
-                        mapaAlunos.set(chave, { roll: rNoLimpo, turma: turma, nome: nome });
-                    }
-                });
-            }
-            processarLista(d1);
-            processarLista(d2);
-
-            let lista = [];
-            mapaAlunos.forEach(aluno => {
-                let notasCalc = calcularNotasAlunoDesenvolvedor(aluno.nome, aluno.turma, aluno.roll, simAtual);
-                if (notasCalc) {
-                    lista.push({
-                        chamada: aluno.roll || "-",
-                        turma: aluno.turma,
-                        nome: aluno.nome,
-                        ling: notasCalc.ling,
-                        hum: notasCalc.hum,
-                        nat: notasCalc.nat,
-                        mat: notasCalc.mat,
-                        red: notasCalc.red,
-                        media: notasCalc.media
-                    });
-                }
-            });
-            return lista;
         }
 
         function carregarAuditoria() {
@@ -1096,7 +1121,6 @@
             let res = calcularNotasAlunoDesenvolvedor(nome, turma, roll, simAtual);
             if (!res) return;
 
-            // Mantém os acertos apenas na inspeção do desenvolvedor, conforme solicitado anteriormente
             document.getElementById("insp-ling").innerText = res.ling.toFixed(1);
             document.getElementById("insp-hum").innerText = res.hum.toFixed(1);
             document.getElementById("insp-nat").innerText = res.nat.toFixed(1);
@@ -1106,12 +1130,17 @@
             let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${simAtual}`) || "[]");
             let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${simAtual}`) || "[]");
 
+            let nomeNormTarget = normalizar(nome);
+            let turmaTarget = String(turma || "").trim().toUpperCase();
+
             function acharReg(lista) {
-                return lista.find(item => {
+                let exato = lista.find(item => {
                     let nm = normalizar(item["Name"] || item["NAME"] || item["Nome"]);
-                    let t = String(item["Class"] || item["CLASS"] || item["Turma"] || "A").trim();
-                    return nm === normalizar(nome) && t === String(turma).trim();
-                }) || lista.find(item => normalizar(item["Name"] || item["NAME"] || item["Nome"]) === normalizar(nome));
+                    let t = String(item["Class"] || item["CLASS"] || item["Turma"] || "A").trim().toUpperCase();
+                    return nm === nomeNormTarget && t === turmaTarget;
+                });
+                if (exato) return exato;
+                return lista.find(item => normalizar(item["Name"] || item["NAME"] || item["Nome"]) === nomeNormTarget) || null;
             }
 
             let reg1 = acharReg(d1);
