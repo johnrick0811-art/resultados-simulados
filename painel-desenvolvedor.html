@@ -38,7 +38,7 @@
             <div class="flex items-center space-x-2">
                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
                 <span class="font-bold text-blue-900">Versão Ativa:</span>
-                <span id="dev-versao-sistema" class="font-mono bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-700 font-semibold">v3.3.0 (Pré-cálculo de Alunos Otimizado)</span>
+                <span id="dev-versao-sistema" class="font-mono bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-700 font-semibold">v3.4.0 (Pré-cálculo Completo de Posições)</span>
             </div>
             <span id="dev-ultima-atualizacao" class="text-gray-500 text-[11px]">Última Sincronização: --</span>
         </div>
@@ -297,7 +297,7 @@
         let simAtual = "1";
         let listaDados1Dia = [];
         let listaDados2Dia = [];
-        const VERSAO_SISTEMA = "v3.3.0";
+        const VERSAO_SISTEMA = "v3.4.0";
 
         window.onload = function() {
             carregarListaSimulados();
@@ -307,17 +307,14 @@
 
         function atualizarBadgeVersaoPainel() {
             let ultimaPub = localStorage.getItem("dev_ultima_publicacao") || "Não publicada ainda";
-            document.getElementById("dev-versao-sistema").innerText = `${VERSAO_SISTEMA} (Pré-cálculo de Alunos Otimizado)`;
+            document.getElementById("dev-versao-sistema").innerText = `${VERSAO_SISTEMA} (Pré-cálculo Completo de Posições)`;
             document.getElementById("dev-ultima-atualizacao").innerText = `Última Sincronização: ${ultimaPub}`;
         }
 
-        // =========================================================================
-        // MOTOR DE PRÉ-CÁLCULO EXECUTADO NO DESENVOLVEDOR (ZERO PESO PARA O ALUNO)
-        // =========================================================================
+        // MOTOR DE PRÉ-CÁLCULO EXECUTADO NO DESENVOLVEDOR (AGORA INCLUINDO AS POSIÇÕES POR ÁREA)
         function gerarPreCalculoAlunosParaNuvem(sId) {
             let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${sId}`) || "[]");
             let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${sId}`) || "[]");
-            let redacoes = JSON.parse(localStorage.getItem(`notas_redacao_sim${sId}`) || "{}");
 
             let mapaAlunos = new Map();
             function processarLista(lista) {
@@ -339,33 +336,74 @@
                 if (resAl) listaCalculada.push(resAl);
             });
 
-            // Gera rankings geral e por turma ordenados
+            // Separa listas para ranqueamento Geral da Escola e por Turma
             let rGeral = [...listaCalculada].sort((a, b) => b.media - a.media);
+            let rLingGeral  = [...listaCalculada].sort((a, b) => b.ling - a.ling);
+            let rHumGeral   = [...listaCalculada].sort((a, b) => b.hum - a.hum);
+            let rNatGeral   = [...listaCalculada].sort((a, b) => b.nat - a.nat);
+            let rMatGeral   = [...listaCalculada].sort((a, b) => b.mat - a.mat);
+
             let turmasMap = {};
             listaCalculada.forEach(a => {
                 if (!turmasMap[a.turma]) turmasMap[a.turma] = [];
                 turmasMap[a.turma].push(a);
             });
 
-            let rankingsProntos = {
-                geral: rGeral.map((a, idx) => ({ nome: normalizar(a.nome), turma: a.turma, pos: idx + 1, total: rGeral.length })),
-                turmas: {}
-            };
-
+            let rankTurmas = {};
             for (let turma in turmasMap) {
-                let rTurma = [...turmasMap[turma]].sort((a, b) => b.media - a.media);
-                rankingsProntos.turmas[turma] = rTurma.map((a, idx) => ({ nome: normalizar(a.nome), turma: a.turma, pos: idx + 1, total: rTurma.length }));
+                let tAlunos = turmasMap[turma];
+                rankTurmas[turma] = {
+                    geral: [...tAlunos].sort((a, b) => b.media - a.media),
+                    ling: [...tAlunos].sort((a, b) => b.ling - a.ling),
+                    hum: [...tAlunos].sort((a, b) => b.hum - a.hum),
+                    nat: [...tAlunos].sort((a, b) => b.nat - a.nat),
+                    mat: [...tAlunos].sort((a, b) => b.mat - a.mat)
+                };
             }
 
-            // Salva o cache consolidado por aluno e rankings do simulado no localStorage para subir na nuvem
+            // Atribui posições definitivas já calculadas para cada aluno (Escola e Turma)
             let cacheAlunosSimulado = {};
             listaCalculada.forEach(a => {
-                let chaveAluno = `${normalizar(a.nome)}_${a.turma}_${a.roll}`;
+                let nomeN = normalizar(a.nome);
+                let t = a.turma;
+
+                let posGeralEscola = rGeral.findIndex(x => normalizar(x.nome) === nomeN) + 1;
+                let posLingEscola  = rLingGeral.findIndex(x => normalizar(x.nome) === nomeN) + 1;
+                let posHumEscola   = rHumGeral.findIndex(x => normalizar(x.nome) === nomeN) + 1;
+                let posNatEscola   = rNatGeral.findIndex(x => normalizar(x.nome) === nomeN) + 1;
+                let posMatEscola   = rMatGeral.findIndex(x => normalizar(x.nome) === nomeN) + 1;
+
+                let tData = rankTurmas[t];
+                let posGeralTurma = tData.geral.findIndex(x => normalizar(x.nome) === nomeN) + 1;
+                let posLingTurma  = tData.ling.findIndex(x => normalizar(x.nome) === nomeN) + 1;
+                let posHumTurma   = tData.hum.findIndex(x => normalizar(x.nome) === nomeN) + 1;
+                let posNatTurma   = tData.nat.findIndex(x => normalizar(x.nome) === nomeN) + 1;
+                let posMatTurma   = tData.mat.findIndex(x => normalizar(x.nome) === nomeN) + 1;
+
+                a.posicoes = {
+                    escola: {
+                        geral: `${posGeralEscola}º de ${rGeral.length}`,
+                        ling: `${posLingEscola}º`,
+                        hum: `${posHumEscola}º`,
+                        nat: `${posNatEscola}º`,
+                        mat: `${posMatEscola}º`,
+                        numGeral: posGeralEscola
+                    },
+                    turma: {
+                        geral: `${posGeralTurma}º de ${tData.geral.length}`,
+                        ling: `${posLingTurma}º`,
+                        hum: `${posHumTurma}º`,
+                        nat: `${posNatTurma}º`,
+                        mat: `${posMatTurma}º`,
+                        numGeral: posGeralTurma
+                    }
+                };
+
+                let chaveAluno = `${nomeN}_${t}_${a.roll}`;
                 cacheAlunosSimulado[chaveAluno] = a;
             });
 
             localStorage.setItem(`pre_calculo_alunos_sim_${sId}`, JSON.stringify(cacheAlunosSimulado));
-            localStorage.setItem(`ranking_pronto_sim_${sId}`, JSON.stringify(rankingsProntos));
         }
 
         function alunoTemRespostas(reg) {
@@ -486,7 +524,6 @@
             if (listaDados2Dia.length > 0) localStorage.setItem(`dados_2dia_sim${simAtual}`, JSON.stringify(listaDados2Dia));
             salvarParametrosAreaAtual();
 
-            // Roda o motor de pré-cálculo para todos os simulados cadastrados antes de enviar para a nuvem
             let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1"]');
             simuladosSalvos.forEach(s => {
                 gerarPreCalculoAlunosParaNuvem(s);
@@ -517,7 +554,7 @@
                 document.getElementById("msg-sucesso").classList.remove("hidden");
                 setTimeout(() => document.getElementById("msg-sucesso").classList.add("hidden"), 5000);
                 atualizarBadgeVersaoPainel();
-                alert("🚀 Salvo na nuvem do Supabase com sucesso! Pré-cálculo de notas e rankings gerados para máxima velocidade dos alunos.");
+                alert("🚀 Salvo na nuvem do Supabase com sucesso! Pré-cálculo de notas e posições por área gerados.");
             } catch (err) {
                 console.error(err);
                 alert("Erro ao salvar na nuvem: " + err.message);
@@ -558,7 +595,6 @@
                 localStorage.removeItem(`dados_2dia_sim${simAtual}`);
                 localStorage.removeItem(`notas_redacao_sim${simAtual}`);
                 localStorage.removeItem(`config_areas_sim${simAtual}`);
-                localStorage.removeItem(`ranking_pronto_sim${simAtual}`);
                 localStorage.removeItem(`pre_calculo_alunos_sim${simAtual}`);
                 simuladosSalvos = simuladosSalvos.filter(s => s !== simAtual);
                 if (!simuladosSalvos.length) simuladosSalvos = ["1"];
