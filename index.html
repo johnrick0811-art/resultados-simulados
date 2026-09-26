@@ -6,7 +6,6 @@
     <title>Portal do Aluno - Histórico de Simulados & Nuvem Local</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Biblioteca jsPDF para gerar os boletins oficiais em PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <!-- Carregador dinâmico anti-cache do dados.js -->
@@ -24,163 +23,173 @@
         .seta-gaveta { transition: transform 0.3s ease; }
     </style>
 </head>
-<body class="bg-gray-100 font-sans">
+<body class="bg-gray-100 font-sans min-h-screen flex flex-col justify-between">
 
-    <!-- TELA DE LOGIN DO ALUNO -->
-    <div id="tela-login" class="min-h-screen flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md p-8 rounded-2xl shadow-xl border border-gray-200">
-            <div class="text-center mb-6">
-                <h1 class="text-2xl font-bold text-blue-600">🎓 Portal do Aluno & Nuvem Local</h1>
-                <p id="status-carregamento-nuvem" class="text-xs text-blue-500 mt-1 font-semibold">🔄 Carregando dados locais...</p>
+    <div>
+        <!-- TELA DE LOGIN DO ALUNO -->
+        <div id="tela-login" class="min-h-[85vh] flex items-center justify-center p-4">
+            <div class="bg-white w-full max-w-md p-8 rounded-2xl shadow-xl border border-gray-200">
+                <div class="text-center mb-6">
+                    <h1 class="text-2xl font-bold text-blue-600">🎓 Portal do Aluno & Nuvem Local</h1>
+                    <p class="text-xs text-gray-400 mt-1">Carneiro Softwares & Automação</p>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Selecione seu Simulado</label>
+                        <select id="login-simulado" class="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 font-semibold text-blue-700">
+                            <!-- Preenchido via JS -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Turma</label>
+                        <input type="text" id="login-turma" placeholder="Ex: A" class="w-full px-3 py-2 border rounded-lg text-sm uppercase">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Número de Chamada ou Nome Completo</label>
+                        <input type="text" id="login-busca" placeholder="Ex: 10 ou Nome do Aluno" class="w-full px-3 py-2 border rounded-lg text-sm">
+                    </div>
+                    <button onclick="realizarLoginAluno()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-sm transition shadow-lg">Entrar no Portal</button>
+                </div>
             </div>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Selecione seu Simulado</label>
-                    <select id="login-simulado" class="w-full px-3 py-2 border rounded-lg text-sm bg-gray-50 font-semibold text-blue-700">
-                        <!-- Preenchido via JS -->
-                    </select>
+        </div>
+
+        <!-- PAINEL DE DESEMPENHO (Oculto até o login) -->
+        <div id="painel-aluno" class="hidden">
+            <header class="bg-blue-600 text-white p-4 shadow-md">
+                <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+                    <div>
+                        <h1 class="text-xl font-bold">Painel de Desempenho do Aluno</h1>
+                        <p id="aluno-info-topo" class="text-xs text-blue-200 mt-0.5">Carregando informações...</p>
+                    </div>
+                    <div class="flex items-center space-x-3 flex-wrap gap-2">
+                        <button onclick="gerarBoletimPDF()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow flex items-center gap-1.5">📄 Baixar Boletim (PDF)</button>
+                        <span class="text-xs font-semibold">Exibindo:</span>
+                        <select id="select-edicao-aluno" onchange="mudarSimuladoAluno()" class="px-3 py-1.5 rounded-lg text-xs font-bold text-blue-800 bg-white shadow">
+                            <!-- Preenchido via JS -->
+                        </select>
+                        <button onclick="sairDoPortal()" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow">Sair</button>
+                    </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Turma</label>
-                    <input type="text" id="login-turma" placeholder="Ex: A" class="w-full px-3 py-2 border rounded-lg text-sm uppercase">
+            </header>
+
+            <main class="max-w-6xl mx-auto p-6 space-y-6">
+                <!-- STATUS DE PARTICIPAÇÃO -->
+                <div id="status-presenca-box" class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Status de Participação</p>
+                    <p id="texto-presenca" class="text-sm font-semibold text-blue-900">Verificando presença...</p>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Número de Chamada ou Nome Completo</label>
-                    <input type="text" id="login-busca" placeholder="Ex: 10 ou Nome do Aluno" class="w-full px-3 py-2 border rounded-lg text-sm">
+
+                <!-- CARDS DE NOTAS TRI E QUANTIDADE DE ACERTOS -->
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Linguagens</p>
+                        <p id="card-ling" class="text-xl font-extrabold text-indigo-600 mt-1">0.0</p>
+                        <p id="acertos-ling" class="text-xs text-gray-500 mt-1">(0 acertos)</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Humanas</p>
+                        <p id="card-hum" class="text-xl font-extrabold text-green-600 mt-1">0.0</p>
+                        <p id="acertos-hum" class="text-xs text-gray-500 mt-1">(0 acertos)</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Natureza</p>
+                        <p id="card-nat" class="text-xl font-extrabold text-yellow-600 mt-1">0.0</p>
+                        <p id="acertos-nat" class="text-xs text-gray-500 mt-1">(0 acertos)</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Matemática</p>
+                        <p id="card-mat" class="text-xl font-extrabold text-purple-600 mt-1">0.0</p>
+                        <p id="acertos-mat" class="text-xs text-gray-500 mt-1">(0 acertos)</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 col-span-2 md:col-span-1">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Redação</p>
+                        <p id="card-red" class="text-xl font-extrabold text-pink-600 mt-1">0 pts</p>
+                        <p class="text-xs text-gray-400 mt-1">Nota Oficial</p>
+                    </div>
                 </div>
-                <button onclick="realizarLoginAluno()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-sm transition shadow-lg">Entrar no Portal</button>
-            </div>
+
+                <!-- RESUMO E GRÁFICO DE BARRAS -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-bold text-gray-800 text-sm mb-2">📊 Resumo do Simulado</h3>
+                            <p class="text-xs text-gray-500">Desempenho Consolidado</p>
+                            <div class="my-6 text-center">
+                                <p id="resumo-total-acertos" class="text-4xl font-black text-blue-600">0</p>
+                                <p class="text-xs text-gray-500 font-semibold mt-1">acertos totais</p>
+                            </div>
+                        </div>
+                        <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 text-center">
+                            <p class="text-[10px] font-bold text-blue-600 uppercase">Média Simples (Enem)</p>
+                            <p id="resumo-media-enem" class="text-2xl font-extrabold text-blue-900 mt-0.5">0.0</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 md:col-span-2">
+                        <h3 class="font-bold text-gray-800 text-sm mb-4">📈 Desempenho por Área (Simulado Atual)</h3>
+                        <div class="relative h-64"><canvas id="graficoDesempenhoAluno"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- GAVETA 1 -->
+                <details class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300">
+                    <summary class="p-6 font-bold text-gray-800 text-sm cursor-pointer select-none flex justify-between items-center hover:bg-gray-50 transition">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-lg">📉</span>
+                            <span>Histórico e Evolução entre os Simulados</span>
+                        </div>
+                        <div class="flex items-center space-x-2 text-xs font-semibold text-blue-600">
+                            <span>Detalhes</span>
+                            <span class="seta-gaveta inline-block text-base">▼</span>
+                        </div>
+                    </summary>
+                    <div class="p-6 pt-0 border-t border-gray-100 mt-2">
+                        <p class="text-xs text-gray-500 mb-4">Acompanhe a sua trajetória de notas médias ao longo de todas as edições.</p>
+                        <div class="relative h-72"><canvas id="graficoHistoricoEvolucao"></canvas></div>
+                    </div>
+                </details>
+
+                <!-- GAVETA 2 -->
+                <details class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300">
+                    <summary class="p-6 font-bold text-gray-800 text-sm cursor-pointer select-none flex justify-between items-center hover:bg-gray-50 transition">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-lg">📝</span>
+                            <span>Auditoria de Respostas por Questão (1 a 180)</span>
+                        </div>
+                        <div class="flex items-center space-x-2 text-xs font-semibold text-blue-600">
+                            <span>Detalhes</span>
+                            <span class="seta-gaveta inline-block text-base">▼</span>
+                        </div>
+                    </summary>
+                    <div class="p-6 pt-0 border-t border-gray-100 mt-2">
+                        <div class="overflow-x-auto max-h-96 border rounded-lg shadow-inner">
+                            <table class="min-w-full divide-y divide-gray-200 text-xs">
+                                <thead class="bg-gray-50 sticky top-0">
+                                    <tr>
+                                        <th class="px-4 py-2.5 text-left font-bold text-gray-600">Questão</th>
+                                        <th class="px-4 py-2.5 text-left font-bold text-gray-600">Sua Resposta</th>
+                                        <th class="px-4 py-2.5 text-left font-bold text-gray-600">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabela-questoes-aluno" class="bg-white divide-y divide-gray-200">
+                                    <!-- Preenchido via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </details>
+            </main>
         </div>
     </div>
 
-    <!-- PAINEL DE DESEMPENHO (Oculto até o login) -->
-    <div id="painel-aluno" class="hidden">
-        <!-- TOPO / HEADER DO ALUNO -->
-        <header class="bg-blue-600 text-white p-4 shadow-md">
-            <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-                <div>
-                    <h1 class="text-xl font-bold">Painel de Desempenho do Aluno</h1>
-                    <p id="aluno-info-topo" class="text-xs text-blue-200 mt-0.5">Carregando informações...</p>
-                </div>
-                <div class="flex items-center space-x-3 flex-wrap gap-2">
-                    <button onclick="gerarBoletimPDF()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow flex items-center gap-1.5">📄 Baixar Boletim (PDF)</button>
-                    <span class="text-xs font-semibold">Exibindo:</span>
-                    <select id="select-edicao-aluno" onchange="mudarSimuladoAluno()" class="px-3 py-1.5 rounded-lg text-xs font-bold text-blue-800 bg-white shadow">
-                        <!-- Preenchido via JS -->
-                    </select>
-                    <button onclick="sairDoPortal()" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition shadow">Sair</button>
-                </div>
-            </div>
-        </header>
-
-        <main class="max-w-6xl mx-auto p-6 space-y-6">
-            <!-- STATUS DE PARTICIPAÇÃO -->
-            <div id="status-presenca-box" class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Status de Participação</p>
-                <p id="texto-presenca" class="text-sm font-semibold text-blue-900">Verificando presença...</p>
-            </div>
-
-            <!-- CARDS DE NOTAS TRI E QUANTIDADE DE ACERTOS -->
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Linguagens</p>
-                    <p id="card-ling" class="text-xl font-extrabold text-indigo-600 mt-1">0.0</p>
-                    <p id="acertos-ling" class="text-xs text-gray-500 mt-1">(0 acertos)</p>
-                </div>
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Humanas</p>
-                    <p id="card-hum" class="text-xl font-extrabold text-green-600 mt-1">0.0</p>
-                    <p id="acertos-hum" class="text-xs text-gray-500 mt-1">(0 acertos)</p>
-                </div>
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Natureza</p>
-                    <p id="card-nat" class="text-xl font-extrabold text-yellow-600 mt-1">0.0</p>
-                    <p id="acertos-nat" class="text-xs text-gray-500 mt-1">(0 acertos)</p>
-                </div>
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Matemática</p>
-                    <p id="card-mat" class="text-xl font-extrabold text-purple-600 mt-1">0.0</p>
-                    <p id="acertos-mat" class="text-xs text-gray-500 mt-1">(0 acertos)</p>
-                </div>
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 col-span-2 md:col-span-1">
-                    <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Redação</p>
-                    <p id="card-red" class="text-xl font-extrabold text-pink-600 mt-1">0 pts</p>
-                    <p class="text-xs text-gray-400 mt-1">Nota Oficial</p>
-                </div>
-            </div>
-
-            <!-- RESUMO E GRÁFICO DE BARRAS -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex flex-col justify-between">
-                    <div>
-                        <h3 class="font-bold text-gray-800 text-sm mb-2">📊 Resumo do Simulado</h3>
-                        <p class="text-xs text-gray-500">Desempenho Consolidado</p>
-                        <div class="my-6 text-center">
-                            <p id="resumo-total-acertos" class="text-4xl font-black text-blue-600">0</p>
-                            <p class="text-xs text-gray-500 font-semibold mt-1">acertos totais</p>
-                        </div>
-                    </div>
-                    <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 text-center">
-                        <p class="text-[10px] font-bold text-blue-600 uppercase">Média Simples (Enem)</p>
-                        <p id="resumo-media-enem" class="text-2xl font-extrabold text-blue-900 mt-0.5">0.0</p>
-                    </div>
-                </div>
-
-                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 md:col-span-2">
-                    <h3 class="font-bold text-gray-800 text-sm mb-4">📈 Desempenho por Área (Simulado Atual)</h3>
-                    <div class="relative h-64"><canvas id="graficoDesempenhoAluno"></canvas></div>
-                </div>
-            </div>
-
-            <!-- GAVETA 1: HISTÓRICO E EVOLUÇÃO ENTRE OS SIMULADOS -->
-            <details class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300">
-                <summary class="p-6 font-bold text-gray-800 text-sm cursor-pointer select-none flex justify-between items-center hover:bg-gray-50 transition">
-                    <div class="flex items-center space-x-2">
-                        <span class="text-lg">📉</span>
-                        <span>Histórico e Evolução entre os Simulados</span>
-                    </div>
-                    <div class="flex items-center space-x-2 text-xs font-semibold text-blue-600">
-                        <span>Detalhes</span>
-                        <span class="seta-gaveta inline-block text-base">▼</span>
-                    </div>
-                </summary>
-                <div class="p-6 pt-0 border-t border-gray-100 mt-2">
-                    <p class="text-xs text-gray-500 mb-4">Acompanhe a sua trajetória de notas médias ao longo de todas as edições.</p>
-                    <div class="relative h-72"><canvas id="graficoHistoricoEvolucao"></canvas></div>
-                </div>
-            </details>
-
-            <!-- GAVETA 2: AUDITORIA DE RESPOSTAS POR QUESTÃO (1 a 180) -->
-            <details class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden transition-all duration-300">
-                <summary class="p-6 font-bold text-gray-800 text-sm cursor-pointer select-none flex justify-between items-center hover:bg-gray-50 transition">
-                    <div class="flex items-center space-x-2">
-                        <span class="text-lg">📝</span>
-                        <span>Auditoria de Respostas por Questão (1 a 180)</span>
-                    </div>
-                    <div class="flex items-center space-x-2 text-xs font-semibold text-blue-600">
-                        <span>Detalhes</span>
-                        <span class="seta-gaveta inline-block text-base">▼</span>
-                    </div>
-                </summary>
-                <div class="p-6 pt-0 border-t border-gray-100 mt-2">
-                    <div class="overflow-x-auto max-h-96 border rounded-lg shadow-inner">
-                        <table class="min-w-full divide-y divide-gray-200 text-xs">
-                            <thead class="bg-gray-50 sticky top-0">
-                                <tr>
-                                    <th class="px-4 py-2.5 text-left font-bold text-gray-600">Questão</th>
-                                    <th class="px-4 py-2.5 text-left font-bold text-gray-600">Sua Resposta</th>
-                                    <th class="px-4 py-2.5 text-left font-bold text-gray-600">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tabela-questoes-aluno" class="bg-white divide-y divide-gray-200">
-                                <!-- Preenchido via JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </details>
-        </main>
-    </div>
+    <!-- RODAPÉ DISCRETO COM INDICADOR DE VERSÃO / SINCRONIZAÇÃO -->
+    <footer class="py-4 px-6 text-center text-[11px] text-gray-400 border-t border-gray-200 bg-white mt-12 flex justify-between items-center max-w-6xl mx-auto w-full">
+        <span>Portal do Aluno - Carneiro Softwares & Automação</span>
+        <div class="flex items-center space-x-2 cursor-help" title="Indicador de Sincronização com a Nuvem Local">
+            <span id="indicador-status-nuvem" class="w-2.5 h-2.5 rounded-full bg-gray-300 inline-block"></span>
+            <span id="texto-versao-aluno" class="font-mono text-[10px]">v: Verificando...</span>
+        </div>
+    </footer>
 
     <script>
         let alunoLogado = null;
@@ -189,31 +198,29 @@
         let graficoHistoricoInstance = null;
 
         async function carregarDadosDaNuvem() {
+            const indicador = document.getElementById("indicador-status-nuvem");
+            const txtVersao = document.getElementById("texto-versao-aluno");
+
             if (window.SISTEMA_DADOS_SIMULADOS && window.SISTEMA_DADOS_SIMULADOS.localStorageBackup) {
                 let backup = window.SISTEMA_DADOS_SIMULADOS.localStorageBackup;
                 for (let k in backup) {
                     localStorage.setItem(k, backup[k]);
                 }
+                indicador.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shadow-sm";
+                txtVersao.innerText = "Sync: OK (v." + (window.SISTEMA_DADOS_SIMULADOS.versao || "2.6") + ")";
                 return window.SISTEMA_DADOS_SIMULADOS;
+            } else {
+                indicador.className = "w-2.5 h-2.5 rounded-full bg-amber-500 inline-block shadow-sm";
+                txtVersao.innerText = "Sync: Local Offline";
+                return null;
             }
-            return null;
         }
 
         window.onload = async function() {
-            let dadosNuvem = await carregarDadosDaNuvem();
-            if (dadosNuvem && dadosNuvem.localStorageBackup) {
-                document.getElementById("status-carregamento-nuvem").innerText = "✅ Dados e TRI atualizados!";
-                document.getElementById("status-carregamento-nuvem").className = "text-xs text-green-600 mt-1 font-semibold";
-            } else {
-                document.getElementById("status-carregamento-nuvem").innerText = "⚠️ dados.js não encontrado ou vazio";
-                document.getElementById("status-carregamento-nuvem").className = "text-xs text-amber-600 mt-1 font-semibold";
-            }
-
+            await carregarDadosDaNuvem();
             carregarOpcoesSimuladoLogin();
-            
             localStorage.removeItem("aluno_logado_atual");
             alunoLogado = null;
-
             document.getElementById("tela-login").classList.remove("hidden");
             document.getElementById("painel-aluno").classList.add("hidden");
         };
@@ -258,16 +265,13 @@
                     let nome = String(item["Name"] || item["NAME"] || item["Nome"] || "");
                     let rNo = String(item["Roll No"] || item["ROLLNO"] || item["RollNo"] || "").trim();
                     let turma = String(item["Class"] || item["CLASS"] || item["Turma"] || "A").trim();
-
                     let matchBusca = normalizar(nome).includes(normalizar(busca)) || rNo === busca;
                     let matchTurma = !turmaBuscada || turma === turmaBuscada;
-
                     return matchBusca && matchTurma;
                 });
             }
 
             let registro = encontrarNaLista(d1) || encontrarNaLista(d2);
-
             if (!registro) {
                 alert("Aluno não encontrado nas planilhas deste simulado. Verifique a turma e o número/nome.");
                 return;
@@ -281,7 +285,6 @@
             };
 
             localStorage.setItem("aluno_logado_atual", JSON.stringify(alunoLogado));
-
             document.getElementById("tela-login").classList.add("hidden");
             document.getElementById("painel-aluno").classList.remove("hidden");
             carregarListaSimuladosAluno();
@@ -292,7 +295,6 @@
             let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1", "2", "3", "4", "5"]');
             const select = document.getElementById("select-edicao-aluno");
             select.innerHTML = "";
-
             simuladosSalvos.forEach(s => {
                 let opt = document.createElement("option");
                 opt.value = s;
@@ -330,9 +332,7 @@
                 nat:  { base: 9.5, pesoDif: 21.0, teto: 1000, questoes: {} },
                 mat:  { base: 11.2, pesoDif: 25.0, teto: 1000, questoes: {} }
             };
-
             let chaveConfig = `config_areas_sim${sId}`;
-            
             if (window.SISTEMA_DADOS_SIMULADOS && window.SISTEMA_DADOS_SIMULADOS.localStorageBackup) {
                 if (window.SISTEMA_DADOS_SIMULADOS.localStorageBackup[chaveConfig]) {
                     let configNuvem = window.SISTEMA_DADOS_SIMULADOS.localStorageBackup[chaveConfig];
@@ -340,7 +340,6 @@
                     return JSON.parse(configNuvem);
                 }
             }
-
             let configSalva = localStorage.getItem(chaveConfig);
             return configSalva ? JSON.parse(configSalva) : def;
         }
@@ -359,12 +358,8 @@
                 }) || lista.find(item => normalizar(item["Name"] || item["NAME"] || item["Nome"]) === normalizar(alunoLogado.nome));
             }
 
-            let regBruto1 = acharReg(d1);
-            let regBruto2 = acharReg(d2);
-
-            let reg1 = alunoTemRespostas(regBruto1) ? regBruto1 : null;
-            let reg2 = alunoTemRespostas(regBruto2) ? regBruto2 : null;
-
+            let reg1 = alunoTemRespostas(acharReg(d1)) ? acharReg(d1) : null;
+            let reg2 = alunoTemRespostas(acharReg(d2)) ? acharReg(d2) : null;
             if (!reg1 && !reg2) return null;
 
             let ling = 0, hum = 0, nat = 0, mat = 0;
@@ -385,7 +380,6 @@
                     let qLocal = q <= 45 ? q : q - 45;
                     let d = cfg[area].questoes[qLocal] || 'medio';
                     if (d === 'anulada') continue;
-
                     let dQ = obterDado(reg1, q);
                     if (dQ.opt !== '-' && dQ.mark > 0) {
                         if (q <= 45) { ling++; if (d === 'facil') fFaseLing++; }
@@ -401,7 +395,6 @@
                     let qLocal = qFile;
                     let d = cfg[area].questoes[qLocal] || 'medio';
                     if (d === 'anulada') continue;
-
                     let dQ2 = obterDado(reg2, qFile);
                     if (dQ2.opt !== '-' && dQ2.mark > 0) {
                         if (qReal <= 135) { nat++; if (d === 'facil') fFaseNat++; }
@@ -414,23 +407,19 @@
                 if (!reg) return 300.0;
                 let c = cfg[areaKey];
                 let baseScore = areaKey === 'ling' ? 310.0 : (areaKey === 'hum' ? 300.0 : (areaKey === 'nat' ? 290.0 : 280.0));
-                
                 let score = baseScore + (acertos * c.base);
                 for (let q = 1; q <= 45; q++) {
                     let d = c.questoes[q] || 'medio';
                     if (d === 'anulada') continue;
-                    
                     let qGlobal = areaKey === 'ling' ? q : (areaKey === 'hum' ? q + 45 : (areaKey === 'nat' ? q : q + 45));
                     let regOrig = (areaKey === 'ling' || areaKey === 'hum') ? reg1 : reg2;
                     let dQ = obterDado(regOrig, qGlobal);
-
                     if (dQ.mark > 0) {
                         if (d === 'dificil') score += (fFase < 2 ? 3.0 : c.pesoDif);
                         else if (d === 'medio') score += (c.pesoDif * 0.5);
                         else score += (c.pesoDif * 0.25);
                     }
                 }
-
                 let res = score + (acertos * 0.02);
                 if (res > c.teto) res = c.teto;
                 if (res < 300) res = 300.0;
@@ -463,11 +452,8 @@
                 }) || lista.find(item => normalizar(item["Name"] || item["NAME"] || item["Nome"]) === normalizar(alunoLogado.nome));
             }
 
-            let regBruto1 = acharReg(d1);
-            let regBruto2 = acharReg(d2);
-
-            let reg1 = alunoTemRespostas(regBruto1) ? regBruto1 : null;
-            let reg2 = alunoTemRespostas(regBruto2) ? regBruto2 : null;
+            let reg1 = alunoTemRespostas(acharReg(d1)) ? acharReg(d1) : null;
+            let reg2 = alunoTemRespostas(acharReg(d2)) ? acharReg(d2) : null;
 
             let presencaTexto = `${reg1 ? "✅ Presente no 1º Dia" : "❌ Ausente no 1º Dia"} | ${reg2 ? "✅ Presente no 2º Dia" : "❌ Ausente no 2º Dia"}`;
             document.getElementById("texto-presenca").innerText = presencaTexto;
@@ -484,7 +470,6 @@
 
             let cfg = obterConfigAreasSimulado(simAtual);
             let resAtual = calcularNotasAlunoParaSimulado(simAtual);
-
             if (!resAtual) return;
 
             if (reg1) {
@@ -492,18 +477,13 @@
                     let area = q <= 45 ? 'ling' : 'hum';
                     let qLocal = q <= 45 ? q : q - 45;
                     let d = cfg[area].questoes[qLocal] || 'medio';
-                    
                     let dQ = obterDado(reg1, q);
                     let statusBadge = '<span class="text-gray-400">-</span>';
-
-                    if (d === 'anulada') {
-                        statusBadge = '<span class="text-orange-500 font-bold">Anulada</span>';
-                    } else if (dQ.opt !== '-') {
+                    if (d === 'anulada') { statusBadge = '<span class="text-orange-500 font-bold">Anulada</span>'; }
+                    else if (dQ.opt !== '-') {
                         if (dQ.mark > 0) { statusBadge = '<span class="text-green-600 font-bold">Acertou</span>'; }
                         else { statusBadge = '<span class="text-red-500 font-bold">Errou</span>'; }
-                    } else {
-                        statusBadge = '<span class="text-gray-400">Não respondeu</span>';
-                    }
+                    } else { statusBadge = '<span class="text-gray-400">Não respondeu</span>'; }
 
                     let tr = document.createElement("tr");
                     tr.innerHTML = `<td class="px-4 py-2 font-semibold text-gray-700">Q${q}</td><td class="px-4 py-2">${dQ.opt}</td><td class="px-4 py-2">${statusBadge}</td>`;
@@ -523,18 +503,13 @@
                     let area = qFile <= 45 ? 'nat' : 'mat';
                     let qLocal = qFile;
                     let d = cfg[area].questoes[qLocal] || 'medio';
-
                     let dQ2 = obterDado(reg2, qFile);
                     let statusBadge2 = '<span class="text-gray-400">-</span>';
-
-                    if (d === 'anulada') {
-                        statusBadge2 = '<span class="text-orange-500 font-bold">Anulada</span>';
-                    } else if (dQ2.opt !== '-') {
+                    if (d === 'anulada') { statusBadge2 = '<span class="text-orange-500 font-bold">Anulada</span>'; }
+                    else if (dQ2.opt !== '-') {
                         if (dQ2.mark > 0) { statusBadge2 = '<span class="text-green-600 font-bold">Acertou</span>'; }
                         else { statusBadge2 = '<span class="text-red-500 font-bold">Errou</span>'; }
-                    } else {
-                        statusBadge2 = '<span class="text-gray-400">Não respondeu</span>';
-                    }
+                    } else { statusBadge2 = '<span class="text-gray-400">Não respondeu</span>'; }
 
                     let tr = document.createElement("tr");
                     tr.innerHTML = `<td class="px-4 py-2 font-semibold text-gray-700">Q${qReal}</td><td class="px-4 py-2">${dQ2.opt}</td><td class="px-4 py-2">${statusBadge2}</td>`;
@@ -549,7 +524,6 @@
             }
 
             let totalAcertos = resAtual.acertosLing + resAtual.acertosHum + resAtual.acertosNat + resAtual.acertosMat;
-
             document.getElementById("card-ling").innerText = resAtual.ling.toFixed(1);
             document.getElementById("acertos-ling").innerText = `(${resAtual.acertosLing} acertos)`;
             document.getElementById("card-hum").innerText = resAtual.hum.toFixed(1);
@@ -576,23 +550,12 @@
                     datasets: [{
                         label: 'Nota TRI / Oficial',
                         data: [resAtual.ling, resAtual.hum, resAtual.nat, resAtual.mat, resAtual.red],
-                        backgroundColor: [
-                            'rgba(79, 70, 229, 0.8)',
-                            'rgba(16, 185, 129, 0.8)',
-                            'rgba(245, 158, 11, 0.8)',
-                            'rgba(147, 51, 234, 0.8)',
-                            'rgba(236, 72, 153, 0.8)'
-                        ],
+                        backgroundColor: ['rgba(79, 70, 229, 0.8)', 'rgba(16, 185, 129, 0.8)', 'rgba(245, 158, 11, 0.8)', 'rgba(147, 51, 234, 0.8)', 'rgba(236, 72, 153, 0.8)'],
                         borderWidth: 1,
                         borderRadius: 8
                     }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: true, max: 1000 } },
-                    plugins: { legend: { display: false } }
-                }
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 1000 } }, plugins: { legend: { display: false } } }
             });
 
             let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1", "2", "3", "4", "5"]');
@@ -626,15 +589,10 @@
                         pointBackgroundColor: 'rgb(37, 99, 235)'
                     }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: false, min: 300, max: 1000 } }
-                }
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: false, min: 300, max: 1000 } } }
             });
         }
 
-        // --- GERAÇÃO DO BOLETIM EM PDF (ABRINDO EM NOVA ABA DE FORMA SEGURA) ---
         function gerarBoletimPDF() {
             if (!alunoLogado) return;
             let res = calcularNotasAlunoParaSimulado(simAtual);
@@ -651,39 +609,28 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
-            // 1. Registo de Auditoria do Download
             let chaveLog = `logs_downloads_sim${simAtual}`;
             let logs = JSON.parse(localStorage.getItem(chaveLog) || "[]");
             let agora = new Date();
             let dataHoraFormatada = agora.toLocaleString("pt-BR");
             
-            logs.push({
-                aluno: alunoLogado.nome,
-                turma: alunoLogado.turma,
-                simulado: simAtual,
-                dataHora: dataHoraFormatada
-            });
+            logs.push({ aluno: alunoLogado.nome, turma: alunoLogado.turma, simulado: simAtual, dataHora: dataHoraFormatada });
             localStorage.setItem(chaveLog, JSON.stringify(logs));
 
-            // 2. Cabeçalho Corporativo
             doc.setFillColor(37, 99, 235);
             doc.rect(0, 0, 210, 32, "F");
-
             doc.setTextColor(255, 255, 255);
             doc.setFont("helvetica", "bold");
             doc.setFontSize(15);
             doc.text("BOLETIM DE DESEMPENHO - ENEM", 14, 18);
-
             doc.setFontSize(9);
             doc.setFont("helvetica", "normal");
             doc.text("Carneiro Softwares & Automação | " + simAtual + "º Simulado", 14, 25);
 
-            // 3. Dados do Aluno
             doc.setTextColor(50, 50, 50);
             doc.setFontSize(11);
             doc.setFont("helvetica", "bold");
             doc.text("DADOS DO(A) ALUNO(A)", 14, 45);
-
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
             doc.text("Nome Completo: " + alunoLogado.nome, 14, 53);
@@ -695,11 +642,9 @@
             doc.setDrawingColor(200, 200, 200);
             doc.line(14, 66, 196, 66);
 
-            // 4. Tabela de Notas e Desempenho
             doc.setFontSize(11);
             doc.setFont("helvetica", "bold");
             doc.text("RESULTADOS POR ÁREA DO CONHECIMENTO (TRI)", 14, 78);
-
             doc.setFillColor(243, 244, 246);
             doc.rect(14, 83, 182, 10, "F");
             doc.setFontSize(10);
@@ -729,11 +674,9 @@
                 yPos += 10;
             });
 
-            // 5. Box de Destaque da Média Geral
             yPos += 8;
             doc.setFillColor(238, 242, 255);
             doc.roundedRect(14, yPos, 182, 20, 3, 3, "F");
-
             doc.setTextColor(30, 58, 138);
             doc.setFont("helvetica", "bold");
             doc.setFontSize(12);
@@ -741,14 +684,12 @@
             doc.setFontSize(16);
             doc.text(res.media.toFixed(1), 160, yPos + 14);
 
-            // 6. Rodapé Oficial
             doc.setTextColor(120, 120, 120);
             doc.setFontSize(8);
             doc.setFont("helvetica", "italic");
             doc.text("Documento gerado eletronicamente através do Portal do Aluno - Carneiro Softwares & Automação.", 14, 280);
             doc.text("Autenticado em: " + dataHoraFormatada, 14, 285);
 
-            // Abre o PDF numa nova aba com iframe (assegura compatibilidade máxima com celulares e PCs)
             let nomeArquivo = `Boletim_${simAtual}Simulado_${alunoLogado.nome.replace(/\s+/g, '_')}.pdf`;
             try {
                 const pdfDataUri = doc.output("datauristring");
