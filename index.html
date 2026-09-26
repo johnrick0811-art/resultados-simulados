@@ -634,7 +634,7 @@
             });
         }
 
-        // --- GERAÇÃO DO BOLETIM EM PDF (BLINDADA COM BLOB) ---
+        // --- GERAÇÃO DO BOLETIM EM PDF (ABRINDO EM NOVA ABA DE FORMA SEGURA) ---
         function gerarBoletimPDF() {
             if (!alunoLogado) return;
             let res = calcularNotasAlunoParaSimulado(simAtual);
@@ -644,14 +644,14 @@
             }
 
             if (!window.jspdf || !window.jspdf.jsPDF) {
-                alert("A biblioteca de PDF ainda está carregando. Aguarde um segundo e tente novamente.");
+                alert("A biblioteca de PDF ainda está a carregar. Aguarde um segundo e tente novamente.");
                 return;
             }
 
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
-            // 1. Registro de Auditoria do Download
+            // 1. Registo de Auditoria do Download
             let chaveLog = `logs_downloads_sim${simAtual}`;
             let logs = JSON.parse(localStorage.getItem(chaveLog) || "[]");
             let agora = new Date();
@@ -748,16 +748,18 @@
             doc.text("Documento gerado eletronicamente através do Portal do Aluno - Carneiro Softwares & Automação.", 14, 280);
             doc.text("Autenticado em: " + dataHoraFormatada, 14, 285);
 
-            let nomeArquivo = "Boletim_" + simAtual + "Simulado_" + alunoLogado.nome.replace(/\s+/g, '_') + ".pdf";
-            
+            // Abre o PDF numa nova aba com iframe (assegura compatibilidade máxima com celulares e PCs)
+            let nomeArquivo = `Boletim_${simAtual}Simulado_${alunoLogado.nome.replace(/\s+/g, '_')}.pdf`;
             try {
-                let blobPDF = doc.output("blob");
-                let link = document.createElement("a");
-                link.href = window.URL.createObjectURL(blobPDF);
-                link.download = nomeArquivo;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                const pdfDataUri = doc.output("datauristring");
+                let novaAba = window.open();
+                if (novaAba) {
+                    novaAba.document.write(
+                        `<title>${nomeArquivo}</title><iframe width='100%' height='100%' src='${pdfDataUri}' style='border:none; position:fixed; top:0; left:0; bottom:0; right:0;'></iframe>`
+                    );
+                } else {
+                    doc.save(nomeArquivo);
+                }
             } catch (erro) {
                 doc.save(nomeArquivo);
             }
