@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal do Aluno - Histórico de Simulados & Nuvem Supabase</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Biblioteca do Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -70,8 +70,8 @@
                 <div id="card-mensagem-incentivo" class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-5 rounded-xl shadow-md flex items-center space-x-4">
                     <div id="icone-incentivo" class="text-3xl">🌟</div>
                     <div>
-                        <h3 id="titulo-incentivo" class="font-bold text-base">Calculando sua trajetória...</h3>
-                        <p id="texto-incentivo" class="text-xs text-blue-100 mt-1">Analisando sua posição no simulado para trazer dicas personalizadas.</p>
+                        <h3 id="titulo-incentivo" class="font-bold text-base">Carregando dados...</h3>
+                        <p id="texto-incentivo" class="text-xs text-blue-100 mt-1">Analisando seu desempenho com base no pré-cálculo do sistema.</p>
                     </div>
                 </div>
 
@@ -224,7 +224,7 @@
         </div>
     </div>
 
-    <!-- RODAPÉ DISCRETO COM INDICADOR DE VERSÃO / SINCRONIZAÇÃO -->
+    <!-- RODAPÉ DISCRETO -->
     <footer class="py-4 px-6 text-center text-[11px] text-gray-400 border-t border-gray-200 bg-white mt-12 flex justify-between items-center max-w-6xl mx-auto w-full">
         <span>Portal do Aluno - Carneiro Softwares & Automação</span>
         <div class="flex items-center space-x-2 cursor-help" title="Indicador de Sincronização com o Supabase">
@@ -242,10 +242,6 @@
         let simAtual = "1";
         let graficoAlunoInstance = null;
         let graficoHistoricoInstance = null;
-
-        // Cache em memória para evitar leituras repetidas e reprocessamento
-        let cacheNotasAluno = {};
-        let cacheRankingSimulado = {};
 
         async function carregarDadosDaNuvem() {
             const indicador = document.getElementById("indicador-status-nuvem");
@@ -287,7 +283,7 @@
         };
 
         function carregarOpcoesSimuladoLogin() {
-            let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1", "2", "3", "4", "5"]');
+            let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1"]');
             const select = document.getElementById("login-simulado");
             select.innerHTML = "";
             simuladosSalvos.forEach(s => {
@@ -298,13 +294,8 @@
             });
         }
 
-        function alunoTemRespostas(reg) {
-            if (!reg) return false;
-            for (let q = 1; q <= 90; q++) {
-                let opt = reg[`Q ${q} Options`] !== undefined ? reg[`Q ${q} Options`] : reg[`Q${q} Options`];
-                if (opt !== undefined && opt !== null && String(opt).trim() !== "" && String(opt).trim() !== "-") return true;
-            }
-            return Number(reg["Correct Answers"] || reg["Acertos"] || 0) > 0;
+        function normalizar(txt) {
+            return String(txt || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
         }
 
         function realizarLoginAluno() {
@@ -318,36 +309,38 @@
             }
 
             simAtual = simuladoEscolhido;
-            let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${simAtual}`) || "[]");
-            let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${simAtual}`) || "[]");
-
-            function encontrarNaLista(lista) {
-                return lista.find(item => {
-                    let nome = String(item["Name"] || item["NAME"] || item["Nome"] || "");
-                    let rNo = String(item["Roll No"] || item["ROLLNO"] || item["RollNo"] || "").trim();
-                    let turma = String(item["Class"] || item["CLASS"] || item["Turma"] || "A").trim();
-                    let matchBusca = normalizar(nome).includes(normalizar(busca)) || rNo === busca;
-                    let matchTurma = !turmaBuscada || turma === turmaBuscada;
-                    return matchBusca && matchTurma;
-                });
+            
+            // Lê o pré-cálculo salvo pelo desenvolvedor na nuvem/localStorage
+            let preCalculoJSON = localStorage.getItem(`pre_calculo_alunos_sim_${simAtual}`);
+            if (!preCalculoJSON) {
+                alert("Os dados deste simulado ainda não foram publicados ou processados pelo desenvolvedor.");
+                return;
             }
 
-            let registro = encontrarNaLista(d1) || encontrarNaLista(d2);
-            if (!registro) {
-                alert("Aluno não encontrado nas planilhas deste simulado. Verifique a turma e o número/nome.");
+            let cacheAlunos = JSON.parse(preCalculoJSON);
+            let alunoEncontrado = null;
+
+            for (let chave in cacheAlunos) {
+                let al = cacheAlunos[chave];
+                let matchBusca = normalizar(al.nome).includes(normalizar(busca)) || String(al.roll) === busca;
+                let matchTurma = !turmaBuscada || al.turma.toUpperCase() === turmaBuscada;
+                if (matchBusca && matchTurma) {
+                    alunoEncontrado = al;
+                    break;
+                }
+            }
+
+            if (!alunoEncontrado) {
+                alert("Aluno não encontrado nas planilhas processadas deste simulado. Verifique a turma e o número/nome.");
                 return;
             }
 
             alunoLogado = {
-                nome: registro["Name"] || registro["NAME"] || registro["Nome"],
-                turma: registro["Class"] || registro["CLASS"] || registro["Turma"] || "A",
-                roll: String(registro["Roll No"] || registro["ROLLNO"] || registro["RollNo"] || "-").trim(),
+                nome: alunoEncontrado.nome,
+                turma: alunoEncontrado.turma,
+                roll: alunoEncontrado.roll,
                 simulado: simAtual
             };
-
-            // Limpa o cache ao trocar de aluno ou login
-            cacheNotasAluno = {};
-            cacheRankingSimulado = {};
 
             localStorage.setItem("aluno_logado_atual", JSON.stringify(alunoLogado));
             document.getElementById("tela-login").classList.add("hidden");
@@ -357,7 +350,7 @@
         }
 
         function carregarListaSimuladosAluno() {
-            let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1", "2", "3", "4", "5"]');
+            let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1"]');
             const select = document.getElementById("select-edicao-aluno");
             select.innerHTML = "";
             simuladosSalvos.forEach(s => {
@@ -380,157 +373,60 @@
 
         function sairDoPortal() {
             localStorage.removeItem("aluno_logado_atual");
-            cacheNotasAluno = {};
-            cacheRankingSimulado = {};
+            alunoLogado = null;
             document.getElementById("painel-aluno").classList.add("hidden");
             document.getElementById("tela-login").classList.remove("hidden");
             document.getElementById("login-busca").value = "";
             document.getElementById("login-turma").value = "";
         }
 
-        function normalizar(txt) {
-            return String(txt || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
-        }
-
-        function obterConfigAreasSimulado(sId) {
-            let def = {
-                ling: { base: 6.8, pesoDif: 9.5, teto: 1000, questoes: {} },
-                hum:  { base: 8.0, pesoDif: 13.0, teto: 1000, questoes: {} },
-                nat:  { base: 9.5, pesoDif: 21.0, teto: 1000, questoes: {} },
-                mat:  { base: 11.2, pesoDif: 25.0, teto: 1000, questoes: {} }
-            };
-            let chaveConfig = `config_areas_sim${sId}`;
-            let configSalva = localStorage.getItem(chaveConfig);
-            return configSalva ? JSON.parse(configSalva) : def;
-        }
-
-        // CÁLCULO OTIMIZADO COM CACHE EM MEMÓRIA
-        function calcularNotasAlunoParaSimuladoEspecifico(nomeAluno, turmaAluno, rollAluno, sId) {
-            let cacheKey = `${sId}_${nomeAluno}_${turmaAluno}_${rollAluno}`;
-            if (cacheNotasAluno[cacheKey]) return cacheNotasAluno[cacheKey];
-
-            let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${sId}`) || "[]");
-            let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${sId}`) || "[]");
-            let redacoes = JSON.parse(localStorage.getItem(`notas_redacao_sim${sId}`) || "{}");
-
-            function acharReg(lista) {
-                return lista.find(item => {
-                    let nm = normalizar(item["Name"] || item["NAME"] || item["Nome"]);
-                    let rNo = String(item["Roll No"] || item["ROLLNO"] || item["RollNo"] || "").trim();
-                    let turma = String(item["Class"] || item["CLASS"] || item["Turma"] || "A").trim();
-                    return nm === normalizar(nomeAluno) && turma === String(turmaAluno).trim() && rNo === String(rollAluno).trim();
-                }) || lista.find(item => normalizar(item["Name"] || item["NAME"] || item["Nome"]) === normalizar(nomeAluno));
-            }
-
-            let reg1 = alunoTemRespostas(acharReg(d1)) ? acharReg(d1) : null;
-            let reg2 = alunoTemRespostas(acharReg(d2)) ? acharReg(d2) : null;
-            if (!reg1 && !reg2) return null;
-
-            let ling = 0, hum = 0, nat = 0, mat = 0;
-            let fFaseLing = 0, fFaseHum = 0, fFaseNat = 0, fFaseMat = 0;
-
-            function obterDado(reg, qNum) {
-                if (!reg) return { mark: 0, opt: '-' };
-                let opt = reg[`Q ${qNum} Options`] !== undefined ? reg[`Q ${qNum} Options`] : reg[`Q${qNum} Options`];
-                let mark = Number(reg[`Q ${qNum} Marks`] !== undefined ? reg[`Q ${qNum} Marks`] : 0);
-                return { opt: opt !== undefined ? opt : '-', mark };
-            }
-
-            let cfg = obterConfigAreasSimulado(sId);
-
-            if (reg1) {
-                for (let q = 1; q <= 90; q++) {
-                    let area = q <= 45 ? 'ling' : 'hum';
-                    let qLocal = q <= 45 ? q : q - 45;
-                    let d = cfg[area].questoes[qLocal] || 'medio';
-                    if (d === 'anulada') continue;
-                    let dQ = obterDado(reg1, q);
-                    if (dQ.opt !== '-' && dQ.mark > 0) {
-                        if (q <= 45) { ling++; if (d === 'facil') fFaseLing++; }
-                        else { hum++; if (d === 'facil') fFaseHum++; }
-                    }
-                }
-            }
-
-            if (reg2) {
-                for (let qFile = 1; qFile <= 90; qFile++) {
-                    let qReal = qFile + 90;
-                    let area = qFile <= 45 ? 'nat' : 'mat';
-                    let qLocal = qFile;
-                    let d = cfg[area].questoes[qLocal] || 'medio';
-                    if (d === 'anulada') continue;
-                    let dQ2 = obterDado(reg2, qFile);
-                    if (dQ2.opt !== '-' && dQ2.mark > 0) {
-                        if (qReal <= 135) { nat++; if (d === 'facil') fFaseNat++; }
-                        else { mat++; if (d === 'facil') fFaseMat++; }
-                    }
-                }
-            }
-
-            function calcTRI(reg, acertos, fFase, areaKey) {
-                if (!reg) return 300.0;
-                let c = cfg[areaKey];
-                let baseScore = areaKey === 'ling' ? 310.0 : (areaKey === 'hum' ? 300.0 : (areaKey === 'nat' ? 290.0 : 280.0));
-                let score = baseScore + (acertos * c.base);
-                for (let q = 1; q <= 45; q++) {
-                    let d = c.questoes[q] || 'medio';
-                    if (d === 'anulada') continue;
-                    let qGlobal = areaKey === 'ling' ? q : (areaKey === 'hum' ? q + 45 : (areaKey === 'nat' ? q : q + 45));
-                    let regOrig = (areaKey === 'ling' || areaKey === 'hum') ? reg1 : reg2;
-                    let dQ = obterDado(regOrig, qGlobal);
-                    if (dQ.mark > 0) {
-                        if (d === 'dificil') score += (fFase < 2 ? 3.0 : c.pesoDif);
-                        else if (d === 'medio') score += (c.pesoDif * 0.5);
-                        else score += (c.pesoDif * 0.25);
-                    }
-                }
-                let res = score + (acertos * 0.02);
-                if (res > c.teto) res = c.teto;
-                if (res < 300) res = 300.0;
-                return res;
-            }
-
-            let tLing = calcTRI(reg1, ling, fFaseLing, 'ling');
-            let tHum  = calcTRI(reg1, hum,  fFaseHum,  'hum');
-            let tNat  = calcTRI(reg2, nat,  fFaseNat,  'nat');
-            let tMat  = calcTRI(reg2, mat,  fFaseMat,  'mat');
-            let tRed  = parseFloat(redacoes[normalizar(nomeAluno)] || 0);
-            let media = (tLing + tHum + tNat + tMat + tRed) / 5;
-
-            let resultado = { nome: nomeAluno, turma: turmaAluno, roll: rollAluno, ling: tLing, hum: tHum, nat: tNat, mat: tMat, red: tRed, media, acertosLing: ling, acertosHum: hum, acertosNat: nat, acertosMat: mat };
-            cacheNotasAluno[cacheKey] = resultado;
-            return resultado;
-        }
-
-        function calcularNotasAlunoParaSimulado(sId) {
-            if (!alunoLogado) return null;
-            return calcularNotasAlunoParaSimuladoEspecifico(alunoLogado.nome, alunoLogado.turma, alunoLogado.roll, sId);
-        }
-
+        // LEITURA ULTRA RÁPIDA: APENAS RECUPERA OS DADOS JÁ PRÉ-CALCULADOS
         function carregarPainelAluno() {
             if (!alunoLogado) return;
             document.getElementById("aluno-info-topo").innerText = `Olá, ${alunoLogado.nome} | Turma: ${alunoLogado.turma} | Nº Chamada: ${alunoLogado.roll}`;
+
+            let preCalculoJSON = localStorage.getItem(`pre_calculo_alunos_sim_${simAtual}`);
+            if (!preCalculoJSON) {
+                alert("Dados indisponíveis para este simulado.");
+                return;
+            }
+
+            let cacheAlunos = JSON.parse(preCalculoJSON);
+            let chaveAluno = `${normalizar(alunoLogado.nome)}_${alunoLogado.turma}_${alunoLogado.roll}`;
+            let resAtual = cacheAlunos[chaveAluno];
+
+            if (!resAtual) {
+                // Tenta buscar apenas pelo nome se a chave exata não bater
+                for (let k in cacheAlunos) {
+                    if (normalizar(cacheAlunos[k].nome) === normalizar(alunoLogado.nome)) {
+                        resAtual = cacheAlunos[k];
+                        break;
+                    }
+                }
+            }
+
+            if (!resAtual) {
+                alert("Registro do aluno não encontrado no pré-cálculo deste simulado.");
+                return;
+            }
 
             let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${simAtual}`) || "[]");
             let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${simAtual}`) || "[]");
 
             function acharReg(lista) {
-                return lista.find(item => {
-                    let nm = normalizar(item["Name"] || item["NAME"] || item["Nome"]);
-                    let rNo = String(item["Roll No"] || item["ROLLNO"] || item["RollNo"] || "").trim();
-                    let turma = String(item["Class"] || item["CLASS"] || item["Turma"] || "A").trim();
-                    return nm === normalizar(alunoLogado.nome) && turma === String(alunoLogado.turma).trim() && rNo === String(alunoLogado.roll).trim();
-                }) || lista.find(item => normalizar(item["Name"] || item["NAME"] || item["Nome"]) === normalizar(alunoLogado.nome));
+                return lista.find(item => normalizar(item["Name"] || item["NAME"] || item["Nome"]) === normalizar(alunoLogado.nome));
             }
 
-            let reg1 = alunoTemRespostas(acharReg(d1)) ? acharReg(d1) : null;
-            let reg2 = alunoTemRespostas(acharReg(d2)) ? acharReg(d2) : null;
+            let reg1 = acharReg(d1);
+            let reg2 = acharReg(d2);
 
             let presencaTexto = `${reg1 ? "✅ Presente no 1º Dia" : "❌ Ausente no 1º Dia"} | ${reg2 ? "✅ Presente no 2º Dia" : "❌ Ausente no 2º Dia"}`;
             document.getElementById("texto-presenca").innerText = presencaTexto;
 
+            // Renderiza tabela de questões instantaneamente
             const tabelaQuestoesHTML = document.getElementById("tabela-questoes-aluno");
-            let linhasHTML = ""; 
+            let linhasHTML = "";
+            let cfg = JSON.parse(localStorage.getItem(`config_areas_sim${simAtual}`) || '{}');
 
             function obterDado(reg, qNum) {
                 if (!reg) return { mark: 0, opt: '-' };
@@ -539,51 +435,38 @@
                 return { opt: opt !== undefined && opt !== null && String(opt).trim() !== "" ? opt : '-', mark };
             }
 
-            let cfg = obterConfigAreasSimulado(simAtual);
-            let resAtual = calcularNotasAlunoParaSimulado(simAtual);
-            if (!resAtual) return;
-
             if (reg1) {
                 for (let q = 1; q <= 90; q++) {
                     let area = q <= 45 ? 'ling' : 'hum';
                     let qLocal = q <= 45 ? q : q - 45;
-                    let d = cfg[area].questoes[qLocal] || 'medio';
+                    let d = cfg[area]?.questoes?.[qLocal] || 'medio';
                     let dQ = obterDado(reg1, q);
                     let statusBadge = '<span class="text-gray-400">-</span>';
-                    if (d === 'anulada') { statusBadge = '<span class="text-orange-500 font-bold">Anulada</span>'; }
-                    else if (dQ.opt !== '-') {
-                        if (dQ.mark > 0) { statusBadge = '<span class="text-green-600 font-bold">Acertou</span>'; }
-                        else { statusBadge = '<span class="text-red-500 font-bold">Errou</span>'; }
-                    } else { statusBadge = '<span class="text-gray-400">Não respondeu</span>'; }
+                    if (d === 'anulada') statusBadge = '<span class="text-orange-500 font-bold">Anulada</span>';
+                    else if (dQ.opt !== '-') statusBadge = dQ.mark > 0 ? '<span class="text-green-600 font-bold">Acertou</span>' : '<span class="text-red-500 font-bold">Errou</span>';
+                    else statusBadge = '<span class="text-gray-400">Não respondeu</span>';
 
                     linhasHTML += `<tr class="hover:bg-gray-50"><td class="px-4 py-2 font-semibold text-gray-700">Q${q}</td><td class="px-4 py-2 font-mono">${dQ.opt}</td><td class="px-4 py-2">${statusBadge}</td></tr>`;
                 }
             } else {
-                for (let q = 1; q <= 90; q++) {
-                    linhasHTML += `<tr class="hover:bg-gray-50"><td class="px-4 py-2 font-semibold text-gray-700">Q${q}</td><td class="px-4 py-2">-</td><td class="px-4 py-2 text-gray-400 font-bold">Ausente</td></tr>`;
-                }
+                for (let q = 1; q <= 90; q++) linhasHTML += `<tr class="hover:bg-gray-50"><td class="px-4 py-2 font-semibold text-gray-700">Q${q}</td><td class="px-4 py-2">-</td><td class="px-4 py-2 text-gray-400 font-bold">Ausente</td></tr>`;
             }
 
             if (reg2) {
                 for (let qFile = 1; qFile <= 90; qFile++) {
                     let qReal = qFile + 90;
                     let area = qFile <= 45 ? 'nat' : 'mat';
-                    let qLocal = qFile;
-                    let d = cfg[area].questoes[qLocal] || 'medio';
+                    let d = cfg[area]?.questoes?.[qFile] || 'medio';
                     let dQ2 = obterDado(reg2, qFile);
                     let statusBadge2 = '<span class="text-gray-400">-</span>';
-                    if (d === 'anulada') { statusBadge2 = '<span class="text-orange-500 font-bold">Anulada</span>'; }
-                    else if (dQ2.opt !== '-') {
-                        if (dQ2.mark > 0) { statusBadge2 = '<span class="text-green-600 font-bold">Acertou</span>'; }
-                        else { statusBadge2 = '<span class="text-red-500 font-bold">Errou</span>'; }
-                    } else { statusBadge2 = '<span class="text-gray-400">Não respondeu</span>'; }
+                    if (d === 'anulada') statusBadge2 = '<span class="text-orange-500 font-bold">Anulada</span>';
+                    else if (dQ2.opt !== '-') statusBadge2 = dQ2.mark > 0 ? '<span class="text-green-600 font-bold">Acertou</span>' : '<span class="text-red-500 font-bold">Errou</span>';
+                    else statusBadge2 = '<span class="text-gray-400">Não respondeu</span>';
 
                     linhasHTML += `<tr class="hover:bg-gray-50"><td class="px-4 py-2 font-semibold text-gray-700">Q${qReal}</td><td class="px-4 py-2 font-mono">${dQ2.opt}</td><td class="px-4 py-2">${statusBadge2}</td></tr>`;
                 }
             } else {
-                for (let qReal = 91; qReal <= 180; qReal++) {
-                    linhasHTML += `<tr class="hover:bg-gray-50"><td class="px-4 py-2 font-semibold text-gray-700">Q${qReal}</td><td class="px-4 py-2">-</td><td class="px-4 py-2 text-gray-400 font-bold">Ausente</td></tr>`;
-                }
+                for (let qReal = 91; qReal <= 180; qReal++) linhasHTML += `<tr class="hover:bg-gray-50"><td class="px-4 py-2 font-semibold text-gray-700">Q${qReal}</td><td class="px-4 py-2">-</td><td class="px-4 py-2 text-gray-400 font-bold">Ausente</td></tr>`;
             }
 
             tabelaQuestoesHTML.innerHTML = linhasHTML;
@@ -601,82 +484,49 @@
             document.getElementById("resumo-total-acertos").innerText = totalAcertos;
             document.getElementById("resumo-media-enem").innerText = resAtual.media.toFixed(1);
 
-            calcularRankingsPrivados(resAtual);
+            exibirRankingsProntos(resAtual);
             atualizarGraficosAlunos(resAtual);
         }
 
-        // RANKING COM CACHE POR SIMULADO PARA FLUIDEZ MÁXIMA
-        function calcularRankingsPrivados(resAtual) {
+        function exibirRankingsProntos(resAtual) {
             let tipoFiltro = document.getElementById("select-filtro-comparacao").value;
             document.getElementById("label-filtro-ranking").innerText = tipoFiltro === 'escola' ? 'Geral da Escola' : `Apenas da Turma ${alunoLogado.turma}`;
 
-            let cacheRankKey = `${simAtual}_${tipoFiltro}`;
-            let listaAlunosProcessada = cacheRankingSimulado[cacheRankKey];
+            let rankingProntoJSON = localStorage.getItem(`ranking_pronto_sim_${simAtual}`);
+            if (!rankingProntoJSON) return;
 
-            if (!listaAlunosProcessada) {
-                let mapaAlunos = new Map();
-                let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${simAtual}`) || "[]");
-                let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${simAtual}`) || "[]");
+            let rankData = JSON.parse(rankingProntoJSON);
+            let nomeNorm = normalizar(alunoLogado.nome);
 
-                function processarLista(lista) {
-                    lista.forEach(item => {
-                        let nome = item["Name"] || item["NAME"] || item["Nome"] || "";
-                        if (!nome) return;
-                        let rNo = String(item["Roll No"] || item["ROLLNO"] || "").trim();
-                        let turma = item["Class"] || item["CLASS"] || item["Turma"] || "A";
-                        let chave = `${normalizar(nome)}_${turma}`;
-                        if (!mapaAlunos.has(chave)) mapaAlunos.set(chave, { nome, turma, roll: rNo });
-                    });
+            let idxGeral = "-º de -";
+            if (tipoFiltro === 'escola') {
+                let achado = rankData.geral.find(a => a.nome === nomeNorm);
+                if (achado) idxGeral = `${achado.pos}º de ${achado.total}`;
+            } else {
+                let turmaAlunos = rankData.turmas[alunoLogado.turma];
+                if (turmaAlunos) {
+                    let achado = turmaAlunos.find(a => a.nome === nomeNorm);
+                    if (achado) idxGeral = `${achado.pos}º de ${achado.total}`;
                 }
-                processarLista(d1);
-                processarLista(d2);
-
-                listaAlunosProcessada = [];
-                mapaAlunos.forEach(al => {
-                    if (tipoFiltro === 'turma' && al.turma !== alunoLogado.turma) return;
-                    let resAl = calcularNotasAlunoParaSimuladoEspecifico(al.nome, al.turma, al.roll, simAtual);
-                    if (resAl) listaAlunosProcessada.push(resAl);
-                });
-
-                cacheRankingSimulado[cacheRankKey] = listaAlunosProcessada;
             }
 
-            if (listaAlunosProcessada.length === 0) return;
-
-            let rGeral = [...listaAlunosProcessada].sort((a, b) => b.media - a.media);
-            let rLing  = [...listaAlunosProcessada].sort((a, b) => b.ling - a.ling);
-            let rHum   = [...listaAlunosProcessada].sort((a, b) => b.hum - a.hum);
-            let rNat   = [...listaAlunosProcessada].sort((a, b) => b.nat - a.nat);
-            let rMat   = [...listaAlunosProcessada].sort((a, b) => b.mat - a.mat);
-
-            let idxGeral = rGeral.findIndex(a => normalizar(a.nome) === normalizar(alunoLogado.nome)) + 1;
-            let idxLing  = rLing.findIndex(a => normalizar(a.nome) === normalizar(alunoLogado.nome)) + 1;
-            let idxHum   = rHum.findIndex(a => normalizar(a.nome) === normalizar(alunoLogado.nome)) + 1;
-            let idxNat   = rNat.findIndex(a => normalizar(a.nome) === normalizar(alunoLogado.nome)) + 1;
-            let idxMat   = rMat.findIndex(a => normalizar(a.nome) === normalizar(alunoLogado.nome)) + 1;
-            let totalGrupo = listaAlunosProcessada.length;
-
-            document.getElementById("pos-geral").innerText = `${idxGeral}º de ${totalGrupo}`;
-            document.getElementById("pos-ling").innerText = `${idxLing}º`;
-            document.getElementById("pos-hum").innerText = `${idxHum}º`;
-            document.getElementById("pos-nat").innerText = `${idxNat}º`;
-            document.getElementById("pos-mat").innerText = `${idxMat}º`;
+            document.getElementById("pos-geral").innerText = idxGeral;
+            document.getElementById("pos-ling").innerText = `-º`;
+            document.getElementById("pos-hum").innerText = `-º`;
+            document.getElementById("pos-nat").innerText = `-º`;
+            document.getElementById("pos-mat").innerText = `-º`;
 
             let iconeEl = document.getElementById("icone-incentivo");
             let tituloEl = document.getElementById("titulo-incentivo");
             let textoEl = document.getElementById("texto-incentivo");
             let cardMsg = document.getElementById("card-mensagem-incentivo");
 
-            if (idxGeral <= 10) {
+            let posNum = parseInt(idxGeral) || 999;
+            if (posNum <= 10) {
                 cardMsg.className = "bg-gradient-to-r from-amber-500 to-orange-600 text-white p-5 rounded-xl shadow-md flex items-center space-x-4";
                 iconeEl.innerText = "🏆";
                 tituloEl.innerText = `Meus parabéns, ${alunoLogado.nome.split(' ')[0]}! Você faz parte dos 10 primeiros colocados!`;
                 textoEl.innerText = `Sua dedicação está trazendo resultados excepcionais. Continue focado para manter o topo rumo à aprovação!`;
-            } else if (idxGeral <= Math.ceil(totalGrupo * 0.3)) {
-                cardMsg.className = "bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-5 rounded-xl shadow-md flex items-center space-x-4";
-                iconeEl.innerText = "🚀";
-                tituloEl.innerText = `Excelente desempenho, ${alunoLogado.nome.split(' ')[0]}! Você está no topo do grupo!`;
-                textoEl.innerText = `Você está muito bem posicionado. Analise os detalhes das questões para alcançar as posições de destaque máximo!`;
             } else {
                 cardMsg.className = "bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-5 rounded-xl shadow-md flex items-center space-x-4";
                 iconeEl.innerText = "💡";
@@ -704,15 +554,20 @@
                 options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 1000 } }, plugins: { legend: { display: false } } }
             });
 
-            let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1", "2", "3", "4", "5"]');
+            let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1"]');
             let labelsHistorico = [];
             let mediasHistorico = [];
 
             simuladosSalvos.forEach(s => {
-                let resS = calcularNotasAlunoParaSimulado(s);
-                if (resS) {
-                    labelsHistorico.push(`${s}º Simulado`);
-                    mediasHistorico.push(Number(resS.media.toFixed(1)));
+                let preCalc = localStorage.getItem(`pre_calculo_alunos_sim_${s}`);
+                if (preCalc) {
+                    let cache = JSON.parse(preCalc);
+                    let chaveAluno = `${normalizar(alunoLogado.nome)}_${alunoLogado.turma}_${alunoLogado.roll}`;
+                    let resS = cache[chaveAluno];
+                    if (resS) {
+                        labelsHistorico.push(`${s}º Simulado`);
+                        mediasHistorico.push(Number(resS.media.toFixed(1)));
+                    }
                 }
             });
 
@@ -741,11 +596,12 @@
 
         function gerarBoletimPDF() {
             if (!alunoLogado) return;
-            let res = calcularNotasAlunoParaSimulado(simAtual);
-            if (!res) {
-                alert("Não há notas calculadas para gerar o boletim.");
-                return;
-            }
+            let preCalculoJSON = localStorage.getItem(`pre_calculo_alunos_sim_${simAtual}`);
+            if (!preCalculoJSON) return;
+            let cache = JSON.parse(preCalculoJSON);
+            let chaveAluno = `${normalizar(alunoLogado.nome)}_${alunoLogado.turma}_${alunoLogado.roll}`;
+            let res = cache[chaveAluno];
+            if (!res) { alert("Não há notas calculadas para gerar o boletim."); return; }
 
             if (!window.jspdf || !window.jspdf.jsPDF) {
                 alert("A biblioteca de PDF ainda está a carregar. Aguarde um segundo e tente novamente.");
