@@ -38,7 +38,7 @@
             <div class="flex items-center space-x-2">
                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
                 <span class="font-bold text-blue-900">Versão Ativa:</span>
-                <span id="dev-versao-sistema" class="font-mono bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-700 font-semibold">v3.4.7 (Robust)</span>
+                <span id="dev-versao-sistema" class="font-mono bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-700 font-semibold">v3.4.8 (Robust Multi-File)</span>
             </div>
             <span id="dev-ultima-atualizacao" class="text-gray-500 text-[11px]">Última Sincronização: --</span>
         </div>
@@ -328,7 +328,7 @@
         let simAtual = "1";
         let listaDados1Dia = [];
         let listaDados2Dia = [];
-        const VERSAO_SISTEMA = "v3.4.7";
+        const VERSAO_SISTEMA = "v3.4.8";
 
         window.onload = function() {
             carregarListaSimulados();
@@ -339,7 +339,7 @@
 
         function atualizarBadgeVersaoPainel() {
             let ultimaPub = localStorage.getItem("dev_ultima_publicacao") || "Não publicada ainda";
-            document.getElementById("dev-versao-sistema").innerText = `${VERSAO_SISTEMA} (Robust)`;
+            document.getElementById("dev-versao-sistema").innerText = `${VERSAO_SISTEMA} (Robust Multi-File)`;
             document.getElementById("dev-ultima-atualizacao").innerText = `Última Sincronização: ${ultimaPub}`;
         }
 
@@ -365,18 +365,17 @@
 
             function processarLista(lista) {
                 lista.forEach(item => {
-                    let nome = item["Name"] || item["NAME"] || item["Nome"] || "";
+                    let nome = item["Name"] || item["NAME"] || item["nome"] || item["Nome"] || "";
                     if (!nome || String(nome).trim() === "") return;
                     let nomeNorm = normalizar(nome);
-                    let rNo = String(item["Roll No"] || item["ROLLNO"] || item["RollNo"] || "").trim();
+                    let rNo = String(item["Roll No"] || item["ROLLNO"] || item["RollNo"] || item["roll no"] || "").trim();
                     let rNoLimpo = rNo !== "" && rNo !== "undefined" ? String(Number(rNo)) : "-";
-                    let turma = String(item["Class"] || item["CLASS"] || item["Turma"] || "A").trim().toUpperCase();
+                    let turma = String(item["Class"] || item["CLASS"] || item["turma"] || item["Turma"] || "A").trim().toUpperCase();
                     
                     let chave = `${nomeNorm}_${turma}`;
                     if (!mapaAlunos.has(chave)) {
                         mapaAlunos.set(chave, { roll: rNoLimpo, turma: turma, nome: String(nome).trim() });
                     } else {
-                        // Atualiza roll caso o anterior estivesse vazio ou dash
                         let atual = mapaAlunos.get(chave);
                         if (atual.roll === "-" && rNoLimpo !== "-") {
                             atual.roll = rNoLimpo;
@@ -415,12 +414,12 @@
             let mapaAlunos = new Map();
             function processarLista(lista) {
                 lista.forEach(item => {
-                    let nome = item["Name"] || item["NAME"] || item["Nome"] || "";
+                    let nome = item["Name"] || item["NAME"] || item["nome"] || item["Nome"] || "";
                     if (!nome || String(nome).trim() === "") return;
                     let nomeNorm = normalizar(nome);
-                    let rNo = String(item["Roll No"] || item["ROLLNO"] || item["RollNo"] || "").trim();
+                    let rNo = String(item["Roll No"] || item["ROLLNO"] || item["RollNo"] || item["roll no"] || "").trim();
                     let rNoLimpo = rNo !== "" && rNo !== "undefined" ? String(Number(rNo)) : "-";
-                    let turma = String(item["Class"] || item["CLASS"] || item["Turma"] || "A").trim().toUpperCase();
+                    let turma = String(item["Class"] || item["CLASS"] || item["turma"] || item["Turma"] || "A").trim().toUpperCase();
                     let chave = `${nomeNorm}_${turma}`;
                     if (!mapaAlunos.has(chave)) {
                         mapaAlunos.set(chave, { nome: String(nome).trim(), turma, roll: rNoLimpo });
@@ -516,7 +515,6 @@
             return configSalva ? JSON.parse(configSalva) : def;
         }
 
-        // CORREÇÃO ROBUSTA: Busca exata de registros considerando nome normalizado e turma
         function calcularNotasAlunoDesenvolvedor(nomeAluno, turmaAluno, rollAluno, sId) {
             let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${sId}`) || "[]");
             let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${sId}`) || "[]");
@@ -526,17 +524,15 @@
             let turmaTarget = String(turmaAluno || "").trim().toUpperCase();
 
             function acharReg(lista) {
-                // 1. Tenta match exato por nome normalizado E turma
                 let exato = lista.find(item => {
-                    let nm = normalizar(item["Name"] || item["NAME"] || item["Nome"]);
-                    let t = String(item["Class"] || item["CLASS"] || item["Turma"] || "A").trim().toUpperCase();
+                    let nm = normalizar(item["Name"] || item["NAME"] || item["nome"] || item["Nome"]);
+                    let t = String(item["Class"] || item["CLASS"] || item["turma"] || item["Turma"] || "A").trim().toUpperCase();
                     return nm === nomeNormTarget && t === turmaTarget;
                 });
                 if (exato) return exato;
 
-                // 2. Tenta match por nome normalizado apenas
                 let porNome = lista.find(item => {
-                    let nm = normalizar(item["Name"] || item["NAME"] || item["Nome"]);
+                    let nm = normalizar(item["Name"] || item["NAME"] || item["nome"] || item["Nome"]);
                     return nm === nomeNormTarget;
                 });
                 return porNome || null;
@@ -746,30 +742,65 @@
             }
         }
 
+        // UPLOAD ROBUSTO COM PROMISE.ALL PARA MULTIPLOS ARQUIVOS (TURMA A + TURMA B)
         document.getElementById('file-1dia').addEventListener('change', async function(e) {
-            let files = e.target.files;
+            let files = Array.from(e.target.files);
+            if (files.length === 0) return;
+            let promessas = files.map(file => {
+                return new Promise((resolve) => {
+                    let reader = new FileReader();
+                    reader.onload = function(evt) {
+                        try {
+                            let data = new Uint8Array(evt.target.result);
+                            let workbook = XLSX.read(data, {type: 'array'});
+                            let sheetName = workbook.SheetNames[0];
+                            let json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+                            resolve(json);
+                        } catch (err) {
+                            console.error("Erro ao ler arquivo 1º dia:", err);
+                            resolve([]);
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                });
+            });
+
+            let resultados = await Promise.all(promessas);
             listaDados1Dia = [];
-            for (let file of files) {
-                let data = await file.arrayBuffer();
-                let workbook = XLSX.read(data, {type: 'array'});
-                listaDados1Dia = listaDados1Dia.concat(XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]));
-            }
+            resultados.forEach(res => { listaDados1Dia = listaDados1Dia.concat(res); });
             localStorage.setItem(`dados_1dia_sim${simAtual}`, JSON.stringify(listaDados1Dia));
-            document.getElementById("status-1dia").innerText = `${files.length} arquivo(s) carregado(s).`;
+            document.getElementById("status-1dia").innerText = `${files.length} arquivo(s) carregado(s) (${listaDados1Dia.length} registros).`;
             carregarAuditoria();
             atualizarBadgeStatus();
         });
 
         document.getElementById('file-2dia').addEventListener('change', async function(e) {
-            let files = e.target.files;
+            let files = Array.from(e.target.files);
+            if (files.length === 0) return;
+            let promessas = files.map(file => {
+                return new Promise((resolve) => {
+                    let reader = new FileReader();
+                    reader.onload = function(evt) {
+                        try {
+                            let data = new Uint8Array(evt.target.result);
+                            let workbook = XLSX.read(data, {type: 'array'});
+                            let sheetName = workbook.SheetNames[0];
+                            let json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+                            resolve(json);
+                        } catch (err) {
+                            console.error("Erro ao ler arquivo 2º dia:", err);
+                            resolve([]);
+                        }
+                    };
+                    reader.readAsArrayBuffer(file);
+                });
+            });
+
+            let resultados = await Promise.all(promessas);
             listaDados2Dia = [];
-            for (let file of files) {
-                let data = await file.arrayBuffer();
-                let workbook = XLSX.read(data, {type: 'array'});
-                listaDados2Dia = listaDados2Dia.concat(XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]));
-            }
+            resultados.forEach(res => { listaDados2Dia = listaDados2Dia.concat(res); });
             localStorage.setItem(`dados_2dia_sim${simAtual}`, JSON.stringify(listaDados2Dia));
-            document.getElementById("status-2dia").innerText = `${files.length} arquivo(s) carregado(s).`;
+            document.getElementById("status-2dia").innerText = `${files.length} arquivo(s) carregado(s) (${listaDados2Dia.length} registros).`;
             carregarAuditoria();
             atualizarBadgeStatus();
         });
@@ -1135,12 +1166,12 @@
 
             function acharReg(lista) {
                 let exato = lista.find(item => {
-                    let nm = normalizar(item["Name"] || item["NAME"] || item["Nome"]);
-                    let t = String(item["Class"] || item["CLASS"] || item["Turma"] || "A").trim().toUpperCase();
+                    let nm = normalizar(item["Name"] || item["NAME"] || item["nome"] || item["Nome"]);
+                    let t = String(item["Class"] || item["CLASS"] || item["turma"] || item["Turma"] || "A").trim().toUpperCase();
                     return nm === nomeNormTarget && t === turmaTarget;
                 });
                 if (exato) return exato;
-                return lista.find(item => normalizar(item["Name"] || item["NAME"] || item["Nome"]) === nomeNormTarget) || null;
+                return lista.find(item => normalizar(item["Name"] || item["NAME"] || item["nome"] || item["Nome"]) === nomeNormTarget) || null;
             }
 
             let reg1 = acharReg(d1);
