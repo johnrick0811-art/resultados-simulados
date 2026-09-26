@@ -320,7 +320,19 @@
                 nat:  { base: 9.5, pesoDif: 21.0, teto: 1000, questoes: {} },
                 mat:  { base: 11.2, pesoDif: 25.0, teto: 1000, questoes: {} }
             };
-            return JSON.parse(localStorage.getItem(`config_areas_sim${sId}`) || JSON.stringify(def));
+
+            let configSalva = localStorage.getItem(`config_areas_sim${sId}`);
+
+            // Prioridade para as configurações atualizadas via dados.js da nuvem
+            if (window.SISTEMA_DADOS_SIMULADOS && window.SISTEMA_DADOS_SIMULADOS.localStorageBackup) {
+                let chaveNuvem = `config_areas_sim${sId}`;
+                if (window.SISTEMA_DADOS_SIMULADOS.localStorageBackup[chaveNuvem]) {
+                    configSalva = window.SISTEMA_DADOS_SIMULADOS.localStorageBackup[chaveNuvem];
+                    localStorage.setItem(chaveNuvem, configSalva);
+                }
+            }
+
+            return configSalva ? JSON.parse(configSalva) : def;
         }
 
         function calcularNotasAlunoParaSimulado(sId) {
