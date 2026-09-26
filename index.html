@@ -6,6 +6,8 @@
     <title>Portal do Aluno - Histórico de Simulados & Nuvem Local</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Biblioteca jsPDF para gerar os boletins oficiais em PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
     <!-- Carregador dinâmico anti-cache do dados.js -->
     <script>
@@ -61,6 +63,7 @@
                     <p id="aluno-info-topo" class="text-xs text-blue-200 mt-0.5">Carregando informações...</p>
                 </div>
                 <div class="flex items-center space-x-3 flex-wrap gap-2">
+                    <button onclick="gerarBoletimPDF()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow flex items-center gap-1.5">📄 Baixar Boletim (PDF)</button>
                     <span class="text-xs font-semibold">Exibindo:</span>
                     <select id="select-edicao-aluno" onchange="mudarSimuladoAluno()" class="px-3 py-1.5 rounded-lg text-xs font-bold text-blue-800 bg-white shadow">
                         <!-- Preenchido via JS -->
@@ -629,6 +632,124 @@
                     scales: { y: { beginAtZero: false, min: 300, max: 1000 } }
                 }
             });
+        }
+
+        // --- GERAÇÃO DO BOLETIM EM PDF (COM LOGO CORPORATIVA E AUDITORIA) ---
+        function gerarBoletimPDF() {
+            if (!alunoLogado) return;
+            let res = calcularNotasAlunoParaSimulado(simAtual);
+            if (!res) {
+                alert("Não há notas calculadas para gerar o boletim.");
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // 1. Registro do Log de Download na Nuvem / LocalStorage para o Desenvolvedor
+            let chaveLog = `logs_downloads_sim${simAtual}`;
+            let logs = JSON.parse(localStorage.getItem(chaveLog) || "[]");
+            
+            // Evita duplicata excessiva caso baixe no mesmo minuto, ou registra novo evento
+            let agora = new Date();
+            let dataHoraFormatada = agora.toLocaleString("pt-BR");
+            
+            logs.push({
+                aluno: alunoLogado.nome,
+                turma: alunoLogado.turma,
+                simulado: simAtual,
+                dataHora: dataHoraFormatada
+            });
+            localStorage.setItem(chaveLog, JSON.stringify(logs));
+
+            // 2. Cabeçalho Corporativo e Logo (Carneiro Softwares & Automação)
+            doc.setFillColor(37, 99, 235); // Azul Primário
+            doc.rect(0, 0, 210, 28, "F");
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(16);
+            doc.text("BOLETIM DE DESEMPENHO - ENEM", 14, 18);
+
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            doc.text(`Carneiro Softwares & Automação | ${simAtual}º Simulado`, 14, 24);
+
+            // 3. Informações do Aluno
+            doc.setTextColor(50, 50, 50);
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "bold");
+            doc.text("DADOS DO(A) ALUNO(A)", 14, 42);
+
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            doc.text(`Nome Completo: ${alunoLogado.nome}`, 14, 50);
+            doc.text(`Turma: ${alunoLogado.turma}`, 14, 57);
+            doc.text(`Número de Chamada: ${alunoLogado.roll}`, 120, 50);
+            doc.text(`Data de Emissão: ${dataHoraFormatada}`, 120, 57);
+
+            // Linha divisória
+            doc.setLineWidth(0.5);
+            doc.setDrawingColor(200, 200, 200);
+            doc.line(14, 63, 196, 63);
+
+            // 4. Tabela de Notas e Desempenho
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "bold");
+            doc.text("RESULTADOS POR ÁREA DO CONHECIMENTO (TRI)", 14, 75);
+
+            // Cabeçalho da Tabela
+            doc.setFillColor(243, 244, 246);
+            doc.rect(14, 80, 182, 10, "F");
+            doc.setFontSize(10);
+            doc.text("Área de Conhecimento", 18, 87);
+            doc.text("Acertos", 95, 87);
+            doc.text("Nota TRI / Oficial", 145, 87);
+
+            // Linhas de Dados
+            let areas = [
+                { nome: "Linguagens, Códigos e suas Tecnologias", acertos: res.acertosLing, nota: res.ling.toFixed(1) },
+                { nome: "Ciências Humanas e suas Tecnologias", acertos: res.acertosHum, nota: res.hum.toFixed(1) },
+                { nome: "Ciências da Natureza e suas Tecnologias", acertos: res.acertosNat, nota: res.nat.toFixed(1) },
+                { nome: "Matemática e suas Tecnologias", acertos: res.acertosMat, nota: res.mat.toFixed(1) },
+                { nome: "Redação Oficial do ENEM", acertos: "-", nota: `${res.red} pts` }
+            ];
+
+            let yPos = 97;
+            areas.forEach((a, idx) => {
+                if (idx % 2 === 1) {
+                    doc.setFillColor(249, 250, 251);
+                    doc.rect(14, yPos - 6, 182, 10, "F");
+                }
+                doc.setFont("helvetica", "normal");
+                doc.text(a.nome, 18, yPos);
+                doc.text(String(a.acertos), 100, yPos);
+                doc.setFont("helvetica", "bold");
+                doc.text(String(a.nota), 150, yPos);
+                yPos += 10;
+            });
+
+            // 5. Box de Destaque da Média Geral
+            yPos += 5;
+            doc.setFillColor(238, 242, 255);
+            doc.roundedRect(14, yPos, 182, 20, 3, 3, "F");
+
+            doc.setTextColor(30, 58, 138);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(12);
+            doc.text("MÉDIA GERAL (ENEM):", 24, yPos + 13);
+            doc.setFontSize(16);
+            doc.text(`${res.media.toFixed(1)}`, 160, yPos + 14);
+
+            // 6. Rodapé Oficial
+            doc.setTextColor(120, 120, 120);
+            doc.setFontSize(8);
+            doc.setFont("helvetica", "italic");
+            doc.text("Documento gerado eletronicamente através do Portal do Aluno - Carneiro Softwares & Automação.", 14, 280);
+            doc.text(`Autenticado em: ${dataHoraFormatada}`, 14, 285);
+
+            // Salva o PDF com o nome personalizado do aluno
+            doc.download(`Boletim_${simAtual}Simulado_${alunoLogado.nome.replace(/\s+/g, '_')}.pdf`);
         }
     </script>
 </body>
