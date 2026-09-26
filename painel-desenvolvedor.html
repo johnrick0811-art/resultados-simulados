@@ -31,28 +31,36 @@
             </div>
         </header>
 
+        <!-- INDICADOR DISCRETO DE VERSÃO ATUAL NO PAINEL -->
+        <div class="bg-blue-50 border border-blue-200 p-3 rounded-xl mb-6 flex justify-between items-center text-xs">
+            <div class="flex items-center space-x-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block animate-pulse"></span>
+                <span class="font-bold text-blue-900">Versão de Sistema Ativa:</span>
+                <span id="dev-versao-sistema" class="font-mono bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-700 font-semibold">v2.6 (Aguardando Deploy)</span>
+            </div>
+            <span id="dev-ultima-atualizacao" class="text-gray-500 text-[11px]">Última Compilação Local: --</span>
+        </div>
+
         <!-- CONFIGURAÇÃO DA AUTOMAÇÃO GITHUB -->
         <div class="bg-gray-50 p-4 rounded-xl border border-gray-300 mb-6 shadow-inner">
-            <h3 class="font-bold text-gray-800 text-xs mb-2">⚙️ Credenciais de Automação GitHub (Salvo localmente no navegador)</h3>
+            <h3 class="font-bold text-gray-800 text-xs mb-2">⚙️ Credenciais de Automação GitHub</h3>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <input type="text" id="gh-user" placeholder="Usuário (ex: johnrick0811-art)" class="px-3 py-1.5 border rounded text-xs bg-white" onchange="salvarCredenciaisGitHub()">
                 <input type="text" id="gh-repo" placeholder="Repositório (ex: resultados-simulados)" class="px-3 py-1.5 border rounded text-xs bg-white" onchange="salvarCredenciaisGitHub()">
                 <input type="password" id="gh-token" placeholder="Token GitHub (ghp_...)" class="px-3 py-1.5 border rounded text-xs bg-white" onchange="salvarCredenciaisGitHub()">
             </div>
-            <p class="text-[10px] text-gray-500 mt-1">Insira seus dados uma única vez. Eles ficam salvos apenas no seu navegador de forma segura.</p>
         </div>
 
-        <!-- SELETOR DINÂMICO DE SIMULADOS & GERENCIAMENTO -->
+        <!-- SELETOR DINÂMICO DE SIMULADOS -->
         <div class="bg-blue-50 p-6 rounded-xl border border-blue-200 mb-6 shadow-inner flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="w-full md:w-auto flex-1">
                 <h3 class="font-bold text-blue-900 text-sm mb-1">🎯 Seleção e Gestão de Simulados</h3>
-                <p class="text-xs text-blue-600">Escolha a edição ativa ou adicione novas edições ao longo do ano.</p>
                 <div class="flex items-center space-x-2 mt-3">
                     <select id="select-edicao-simulado" onchange="mudarEdicaoSimulado()" class="px-4 py-2 border border-blue-300 rounded-lg font-bold text-blue-700 bg-white shadow-sm flex-1 md:w-72">
-                        <!-- Preenchido dinamicamente -->
+                        <!-- Preenchido via JS -->
                     </select>
-                    <button onclick="adicionarNovoSimulado()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-xs font-bold transition shadow" title="Adicionar Novo Simulado">➕ Novo</button>
-                    <button onclick="excluirSimuladoAtual()" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-xs font-bold transition shadow" title="Excluir Simulado Selecionado">🗑️ Excluir</button>
+                    <button onclick="adicionarNovoSimulado()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-xs font-bold transition shadow">➕ Novo</button>
+                    <button onclick="excluirSimuladoAtual()" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-xs font-bold transition shadow">🗑️ Excluir</button>
                 </div>
             </div>
             <div class="text-right">
@@ -60,7 +68,7 @@
             </div>
         </div>
 
-        <!-- PAINEL DE ESTATÍSTICAS GLOBAIS DA TURMA -->
+        <!-- ESTATÍSTICAS GLOBAIS -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div class="bg-gray-50 p-4 rounded-xl border shadow-sm">
                 <p class="text-gray-500 text-xs font-bold uppercase">Total Alunos</p>
@@ -85,7 +93,7 @@
             <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
                 <div class="flex justify-between items-center mb-2">
                     <h3 class="font-bold text-gray-800 text-sm" id="titulo-up-1">📄 Resultados 1º Dia (XLSX)</h3>
-                    <button onclick="limparDadosDia(1)" class="text-red-500 hover:text-red-700 text-xs font-bold">Limpar 1º Dia</button>
+                    <button onclick="limparDadosDia(1)" class="text-red-500 hover:text-red-700 text-xs font-bold">Limpar</button>
                 </div>
                 <input type="file" id="file-1dia" accept=".xlsx" multiple class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-blue-600 file:text-white mb-2">
                 <span id="status-1dia" class="text-xs text-gray-400">Nenhum arquivo selecionado</span>
@@ -94,25 +102,25 @@
             <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 shadow-sm">
                 <div class="flex justify-between items-center mb-2">
                     <h3 class="font-bold text-gray-800 text-sm" id="titulo-up-2">📄 Resultados 2º Dia (XLSX)</h3>
-                    <button onclick="limparDadosDia(2)" class="text-red-500 hover:text-red-700 text-xs font-bold">Limpar 2º Dia</button>
+                    <button onclick="limparDadosDia(2)" class="text-red-500 hover:text-red-700 text-xs font-bold">Limpar</button>
                 </div>
                 <input type="file" id="file-2dia" accept=".xlsx" multiple class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-green-600 file:text-white mb-2">
                 <span id="status-2dia" class="text-xs text-gray-400">Nenhum arquivo selecionado</span>
             </div>
         </div>
 
-        <!-- BOTÕES DE AÇÃO COM AUTOMAÇÃO -->
+        <!-- BOTÕES DE AÇÃO -->
         <div class="flex flex-col md:flex-row justify-center items-center gap-4 mb-8">
             <button onclick="publicarAutomaticoGitHub()" class="bg-emerald-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:bg-emerald-700 transition text-sm flex items-center gap-2">🚀 Salvar e Publicar Automaticamente</button>
             <p id="msg-sucesso" class="text-green-600 font-semibold text-sm hidden">✅ Publicado com sucesso no GitHub Pages!</p>
         </div>
 
-        <!-- AUDITORIA & LISTA DE ALUNOS COM BUSCA E FILTROS -->
+        <!-- LISTA DE ALUNOS -->
         <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-inner mb-6">
             <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-3">
-                <h3 class="text-lg font-bold text-gray-700">📋 Lista de Alunos (Clique para inspecionar)</h3>
+                <h3 class="text-lg font-bold text-gray-700">📋 Lista de Alunos</h3>
                 <div class="flex items-center space-x-2 w-full md:w-auto">
-                    <input type="text" id="filtro-nome" onkeyup="carregarAuditoria()" placeholder="🔍 Buscar aluno por nome..." class="px-3 py-1.5 border rounded text-xs bg-white shadow-sm flex-1 md:w-64">
+                    <input type="text" id="filtro-nome" onkeyup="carregarAuditoria()" placeholder="🔍 Buscar aluno..." class="px-3 py-1.5 border rounded text-xs bg-white shadow-sm flex-1 md:w-64">
                     <select id="filtro-turma" onchange="carregarAuditoria()" class="px-3 py-1.5 border rounded text-xs bg-white shadow-sm font-semibold text-gray-700">
                         <option value="TODAS">Todas as Turmas</option>
                     </select>
@@ -138,7 +146,7 @@
             </div>
         </div>
 
-        <!-- GAVETA DISCRETA: AUDITORIA DE DOWNLOADS DE BOLETINS DOS ALUNOS -->
+        <!-- GAVETA DISCRETA: AUDITORIA DE DOWNLOADS -->
         <details class="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden shadow-inner">
             <summary class="p-4 font-bold text-gray-700 text-xs cursor-pointer select-none flex justify-between items-center hover:bg-gray-100 transition">
                 <div class="flex items-center space-x-2">
@@ -199,7 +207,7 @@
         </div>
     </div>
 
-    <!-- MODAL / LABORATÓRIO E CALIBRAÇÃO TRI -->
+    <!-- MODAL TRI -->
     <div id="modal-calibracao-tri" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <header class="bg-indigo-600 text-white p-5 flex justify-between items-center">
@@ -207,27 +215,23 @@
                     <h2 class="text-xl font-bold">🧪 Laboratório & Calibração Customizada por Área</h2>
                     <p class="text-xs text-indigo-200">Ajuste os parâmetros, tetos e analise o simulador de forma independente para cada área.</p>
                 </div>
-                <button onclick="fecharModalTRI()" class="bg-indigo-700 hover:bg-indigo-800 text-white px-4 py-2 rounded-lg text-xs font-bold transition">✖ Fechar Laboratório</button>
+                <button onclick="fecharModalTRI()" class="bg-indigo-700 hover:bg-indigo-800 text-white px-4 py-2 rounded-lg text-xs font-bold transition">✖ Fechar</button>
             </header>
-            
             <div class="p-6 overflow-y-auto space-y-6 flex-1 bg-gray-50">
-                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 flex flex-col md:flex-row justify-between items-center gap-3">
-                    <div>
-                        <h3 class="font-bold text-indigo-900 text-sm">🎯 Selecione a Área de Foco para Calibração</h3>
-                    </div>
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-200 flex justify-between items-center">
+                    <h3 class="font-bold text-indigo-900 text-sm">🎯 Selecione a Área de Foco</h3>
                     <select id="select-area-laboratorio" onchange="mudarAreaLaboratorio()" class="px-4 py-2 border border-indigo-300 rounded-lg font-bold text-indigo-800 bg-white shadow-sm">
-                        <option value="ling">Linguagens e Códigos (1 a 45)</option>
-                        <option value="hum">Ciências Humanas (46 a 90)</option>
-                        <option value="nat">Ciências da Natureza (91 a 135)</option>
-                        <option value="mat">Matemática (136 a 180)</option>
+                        <option value="ling">Linguagens e Códigos</option>
+                        <option value="hum">Ciências Humanas</option>
+                        <option value="nat">Ciências da Natureza</option>
+                        <option value="mat">Matemática</option>
                     </select>
                 </div>
-
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="bg-white p-5 rounded-xl border shadow-sm space-y-4">
-                        <h3 class="font-bold text-gray-800 text-sm">🎛️ Controles Finos (Área Atual)</h3>
+                        <h3 class="font-bold text-gray-800 text-sm">🎛️ Controles Finos</h3>
                         <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">Fator Base de Acerto da Área</label>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Fator Base de Acerto</label>
                             <input type="range" id="param-base-acerto" min="4.0" max="15.0" step="0.5" value="7.2" oninput="salvarParametrosAreaAtual(); atualizarSimuladorLaboratorio();" class="w-full">
                             <span id="val-base-acerto" class="text-xs font-bold text-indigo-600">7.2</span>
                         </div>
@@ -237,15 +241,14 @@
                             <span id="val-peso-dif" class="text-xs font-bold text-indigo-600">14.0</span>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-700 mb-1">Teto Máximo da Nota para esta Área</label>
+                            <label class="block text-xs font-bold text-gray-700 mb-1">Teto Máximo da Nota</label>
                             <input type="number" id="param-teto-nota" value="1000" onchange="salvarParametrosAreaAtual(); atualizarSimuladorLaboratorio();" class="w-full px-3 py-1.5 border rounded text-xs font-bold">
                         </div>
                     </div>
-
                     <div class="bg-white p-5 rounded-xl border shadow-sm flex flex-col justify-between">
                         <div>
                             <div class="flex justify-between items-center mb-2">
-                                <h3 class="font-bold text-gray-800 text-sm">📊 Simulador Instantâneo do Bloco</h3>
+                                <h3 class="font-bold text-gray-800 text-sm">📊 Simulador Instantâneo</h3>
                                 <span id="sim-aviso-bloco" class="text-[10px] bg-indigo-100 text-indigo-800 font-bold px-2 py-0.5 rounded">Ativas: 45</span>
                             </div>
                             <div class="grid grid-cols-3 gap-2 mb-4">
@@ -255,26 +258,24 @@
                             </div>
                         </div>
                         <div class="bg-indigo-50 p-3 rounded-xl border border-indigo-200 text-center">
-                            <p class="text-[10px] font-bold text-indigo-600 uppercase">Nota TRI Resultante (Área Atual)</p>
+                            <p class="text-[10px] font-bold text-indigo-600 uppercase">Nota TRI Resultante</p>
                             <p id="sim-resultado-nota" class="text-3xl font-extrabold text-indigo-900 mt-1">780.4</p>
                         </div>
                     </div>
                 </div>
-
                 <div class="bg-white p-5 rounded-xl border shadow-sm">
-                    <h3 class="font-bold text-gray-800 text-sm mb-1">🎯 Mapeamento de Dificuldade & Anulações Exclusivo da Área</h3>
+                    <h3 class="font-bold text-gray-800 text-sm mb-1">🎯 Mapeamento de Dificuldade & Anulações</h3>
                     <div class="overflow-x-auto max-h-60 border rounded-lg">
                         <table class="min-w-full divide-y divide-gray-200 text-xs">
-                            <thead class="bg-gray-100 sticky top-0"><tr><th class="px-4 py-2 text-left">Questão</th><th class="px-4 py-2 text-left">Status / Classificação</th></tr></thead>
+                            <thead class="bg-gray-100 sticky top-0"><tr><th class="px-4 py-2 text-left">Questão</th><th class="px-4 py-2 text-left">Status</th></tr></thead>
                             <tbody id="tabela-mapeamento-questoes" class="bg-white divide-y divide-gray-200"></tbody>
                         </table>
                     </div>
                 </div>
             </div>
-
             <footer class="bg-gray-100 p-4 flex justify-end space-x-3 border-t">
-                <button onclick="fecharModalTRI()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition">Cancelar</button>
-                <button onclick="publicarAutomaticoGitHub()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg text-xs font-bold transition shadow">Salvar Alterações e Publicar no GitHub</button>
+                <button onclick="fecharModalTRI()" class="bg-gray-500 text-white px-4 py-2 rounded-lg text-xs font-bold">Fechar</button>
+                <button onclick="publicarAutomaticoGitHub()" class="bg-emerald-600 text-white px-5 py-2 rounded-lg text-xs font-bold shadow">Salvar e Publicar</button>
             </footer>
         </div>
     </div>
@@ -283,13 +284,21 @@
         let simAtual = "1";
         let listaDados1Dia = [];
         let listaDados2Dia = [];
+        const VERSAO_SISTEMA = "v2.6.0";
 
         window.onload = function() {
             carregarCredenciaisGitHub();
             carregarListaSimulados();
             carregarAuditoria();
             carregarAuditoriaDownloads();
+            atualizarBadgeVersaoPainel();
         };
+
+        function atualizarBadgeVersaoPainel() {
+            let ultimaPub = localStorage.getItem("dev_ultima_publicacao") || "Não publicada ainda";
+            document.getElementById("dev-versao-sistema").innerText = VERS_SISTEMA = VERSAO_SISTEMA;
+            document.getElementById("dev-ultima-atualizacao").innerText = `Última Publicação: ${ultimaPub}`;
+        }
 
         function carregarCredenciaisGitHub() {
             document.getElementById("gh-user").value = localStorage.getItem("aut_gh_user") || "";
@@ -308,7 +317,6 @@
             
             if (listaDados1Dia.length > 0) localStorage.setItem(`dados_1dia_sim${simAtual}`, JSON.stringify(listaDados1Dia));
             if (listaDados2Dia.length > 0) localStorage.setItem(`dados_2dia_sim${simAtual}`, JSON.stringify(listaDados2Dia));
-
             salvarParametrosAreaAtual();
 
             let user = document.getElementById("gh-user").value.trim();
@@ -316,27 +324,28 @@
             let token = document.getElementById("gh-token").value.trim();
 
             if (!user || !repo || !token) {
-                alert("Por favor, preencha seu Usuário, Repositório e o Token do GitHub nas configurações acima antes de publicar.");
+                alert("Por favor, preencha suas credenciais do GitHub nas configurações acima.");
                 return;
             }
 
             let dadosBackup = {};
             for(let i = 0; i < localStorage.length; i++) {
                 let key = localStorage.key(i);
-                if (!key.startsWith("aut_gh_")) {
+                if (!key.startsWith("aut_gh_") && !key.startsWith("dev_")) {
                     dadosBackup[key] = localStorage.getItem(key);
                 }
             }
 
-            let conteudoArquivo = `// dados.js - Atualizado em: ${new Date().toISOString()}\nwindow.SISTEMA_DADOS_SIMULADOS = {\n    "status": "ativo",\n    "localStorageBackup": ` + JSON.stringify(dadosBackup, null, 4) + `\n};`;
+            let agoraStr = new Date().toLocaleString("pt-BR");
+            localStorage.setItem("dev_ultima_publicacao", agoraStr);
+
+            let conteudoArquivo = `// dados.js - Versão ${VERSAO_SISTEMA} - Atualizado em: ${agoraStr}\nwindow.SISTEMA_DADOS_SIMULADOS = {\n    "status": "ativo",\n    "versao": "${VERSAO_SISTEMA}",\n    "localStorageBackup": ` + JSON.stringify(dadosBackup, null, 4) + `\n};`;
 
             let path = "dados.js";
             let urlAPI = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
 
             try {
-                let resGet = await fetch(urlAPI, {
-                    headers: { "Authorization": `token ${token}` }
-                });
+                let resGet = await fetch(urlAPI, { headers: { "Authorization": `token ${token}` } });
                 let sha = null;
                 if (resGet.ok) {
                     let fileData = await resGet.json();
@@ -344,9 +353,8 @@
                 }
 
                 let contentBase64 = btoa(unescape(encodeURIComponent(conteudoArquivo)));
-
                 let bodyData = {
-                    message: "Atualização automática de dados e TRI via Painel do Desenvolvedor",
+                    message: `Atualização de dados e TRI - ${VERSAO_SISTEMA}`,
                     content: contentBase64,
                     branch: "main"
                 };
@@ -354,23 +362,20 @@
 
                 let resPut = await fetch(urlAPI, {
                     method: "PUT",
-                    headers: {
-                        "Authorization": `token ${token}`,
-                        "Content-Type": "application/json"
-                    },
+                    headers: { "Authorization": `token ${token}`, "Content-Type": "application/json" },
                     body: JSON.stringify(bodyData)
                 });
 
                 if (resPut.ok) {
                     document.getElementById("msg-sucesso").classList.remove("hidden");
                     setTimeout(() => document.getElementById("msg-sucesso").classList.add("hidden"), 5000);
-                    alert("Sucesso! O arquivo dados.js com as novas configurações da TRI foi atualizado no GitHub. O portal dos alunos refletirá os ajustes em instantes.");
+                    atualizarBadgeVersaoPainel();
+                    alert("Sucesso! O sistema foi publicado no GitHub e está sincronizado com a versão " + VERSAO_SISTEMA);
                 } else {
                     let errJson = await resPut.json();
-                    alert("Erro ao publicar no GitHub: " + (errJson.message || "Verifique suas credenciais."));
+                    alert("Erro ao publicar no GitHub: " + (errJson.message || "Verifique credenciais."));
                 }
             } catch (err) {
-                console.log(err);
                 alert("Erro de conexão ao tentar enviar para o GitHub.");
             }
 
@@ -380,7 +385,7 @@
 
         function carregarListaSimulados() {
             let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1"]');
-            if (!simuladosSalvos || simuladosSalvos.length === 0) simuladosSalvos = ["1"];
+            if (!simuladosSalvos.length) simuladosSalvos = ["1"];
             const select = document.getElementById("select-edicao-simulado");
             select.innerHTML = "";
             simuladosSalvos.forEach(s => {
@@ -395,27 +400,23 @@
 
         function adicionarNovoSimulado() {
             let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1"]');
-            if (!simuladosSalvos || simuladosSalvos.length === 0) {
-                simuladosSalvos = ["1"];
-            } else {
-                let proximo = String(Math.max(...simuladosSalvos.map(Number)) + 1);
-                simuladosSalvos.push(proximo);
-            }
+            let proximo = String(Math.max(...simuladosSalvos.map(Number)) + 1);
+            simuladosSalvos.push(proximo);
             localStorage.setItem("lista_simulados_cadastrados", JSON.stringify(simuladosSalvos));
-            simAtual = simuladosSalvos[simuladosSalvos.length - 1];
+            simAtual = proximo;
             carregarListaSimulados();
             mudarEdicaoSimulado();
         }
 
         function excluirSimuladoAtual() {
             let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1"]');
-            if(confirm(`Tem certeza que deseja excluir o ${simAtual}º Simulado e todos os seus dados?`)) {
+            if(confirm(`Excluir o ${simAtual}º Simulado?`)) {
                 localStorage.removeItem(`dados_1dia_sim${simAtual}`);
                 localStorage.removeItem(`dados_2dia_sim${simAtual}`);
                 localStorage.removeItem(`notas_redacao_sim${simAtual}`);
                 localStorage.removeItem(`config_areas_sim${simAtual}`);
                 simuladosSalvos = simuladosSalvos.filter(s => s !== simAtual);
-                if (simuladosSalvos.length === 0) simuladosSalvos = ["1"];
+                if (!simuladosSalvos.length) simuladosSalvos = ["1"];
                 localStorage.setItem("lista_simulados_cadastrados", JSON.stringify(simuladosSalvos));
                 simAtual = simuladosSalvos[0];
                 carregarListaSimulados();
@@ -427,8 +428,7 @@
             simAtual = document.getElementById("select-edicao-simulado").value;
             document.getElementById("titulo-up-1").innerText = `📄 Resultados 1º Dia - ${simAtual}º Simulado (XLSX)`;
             document.getElementById("titulo-up-2").innerText = `📄 Resultados 2º Dia - ${simAtual}º Simulado (XLSX)`;
-            listaDados1Dia = [];
-            listaDados2Dia = [];
+            listaDados1Dia = []; listaDados2Dia = [];
             document.getElementById("file-1dia").value = "";
             document.getElementById("file-2dia").value = "";
             document.getElementById("status-1dia").innerText = "Nenhum arquivo selecionado";
@@ -464,7 +464,7 @@
         }
 
         document.getElementById('file-1dia').addEventListener('change', async function(e) {
-            const files = e.target.files;
+            let files = e.target.files;
             listaDados1Dia = [];
             for (let file of files) {
                 let data = await file.arrayBuffer();
@@ -478,7 +478,7 @@
         });
 
         document.getElementById('file-2dia').addEventListener('change', async function(e) {
-            const files = e.target.files;
+            let files = e.target.files;
             listaDados2Dia = [];
             for (let file of files) {
                 let data = await file.arrayBuffer();
@@ -504,8 +504,6 @@
         function salvarConfigAreas(config) {
             localStorage.setItem(`config_areas_sim${simAtual}`, JSON.stringify(config));
         }
-
-        function salvarConfigTRI() { carregarAuditoria(); }
 
         function salvarRedacao(nomeAluno, valor) {
             let redacoes = JSON.parse(localStorage.getItem(`notas_redacao_sim${simAtual}`) || "{}");
@@ -559,7 +557,6 @@
                     let qLocal = q <= 45 ? q : q - 45;
                     let d = cfg[area].questoes[qLocal] || 'medio';
                     if (d === 'anulada') continue;
-
                     let dQ = obterDado(reg1, q);
                     if (dQ.opt !== '-' && dQ.mark > 0) {
                         if (q <= 45) { ling++; if (d === 'facil') fFaseLing++; }
@@ -574,7 +571,6 @@
                     let qLocal = qFile;
                     let d = cfg[area].questoes[qLocal] || 'medio';
                     if (d === 'anulada') continue;
-
                     let dQ2 = obterDado(reg2, qFile);
                     if (dQ2.opt !== '-' && dQ2.mark > 0) {
                         if (qReal <= 135) { nat++; if (d === 'facil') fFaseNat++; }
@@ -774,7 +770,6 @@
                     let qLocal = q <= 45 ? q : q - 45;
                     let d = cfg[area].questoes[qLocal] || 'medio';
                     if (d === 'anulada') continue;
-
                     let dQ = obterDado(reg1, q);
                     if (dQ.opt !== '-') {
                         if (dQ.mark > 0) { if (q <= 45) ling++; else hum++; }
@@ -790,7 +785,6 @@
                     let qLocal = qFile;
                     let d = cfg[area].questoes[qLocal] || 'medio';
                     if (d === 'anulada') continue;
-
                     let dQ2 = obterDado(reg2, qFile);
                     if (dQ2.opt !== '-') {
                         if (dQ2.mark > 0) { if (qReal <= 135) nat++; else mat++; }
@@ -820,7 +814,6 @@
             tabelaHTML.appendChild(tr);
         }
 
-        // --- LABORATÓRIO E CALIBRAÇÃO ---
         function abrirModalTRI() { document.getElementById("modal-calibracao-tri").classList.remove("hidden"); carregarInterfaceAreaAtual(); }
         function fecharModalTRI() { document.getElementById("modal-calibracao-tri").classList.add("hidden"); carregarAuditoria(); }
         function mudarAreaLaboratorio() { carregarInterfaceAreaAtual(); }
@@ -864,7 +857,7 @@
                             <option value="facil" ${nivelAtual === 'facil' ? 'selected' : ''}>🟢 Fácil</option>
                             <option value="medio" ${nivelAtual === 'medio' ? 'selected' : ''}>🟡 Média</option>
                             <option value="dificil" ${nivelAtual === 'dificil' ? 'selected' : ''}>🔴 Difícil</option>
-                            <option value="anulada" ${nivelAtual === 'anulada' ? 'selected' : ''}>🚫 Anulada (Neutralizada)</option>
+                            <option value="anulada" ${nivelAtual === 'anulada' ? 'selected' : ''}>🚫 Anulada</option>
                         </select>
                     </td>
                 `;
@@ -934,7 +927,7 @@
             let dadosBackup = {};
             for(let i = 0; i < localStorage.length; i++) {
                 let key = localStorage.key(i);
-                if (!key.startsWith("aut_gh_")) dadosBackup[key] = localStorage.getItem(key);
+                if (!key.startsWith("aut_gh_") && !key.startsWith("dev_")) dadosBackup[key] = localStorage.getItem(key);
             }
             let blob = new Blob([JSON.stringify(dadosBackup, null, 2)], {type: "application/json"});
             let url = URL.createObjectURL(blob);
@@ -951,14 +944,10 @@
             reader.onload = function(e) {
                 try {
                     let dadosBackup = JSON.parse(e.target.result);
-                    for(let key in dadosBackup) {
-                        localStorage.setItem(key, dadosBackup[key]);
-                    }
+                    for(let key in dadosBackup) { localStorage.setItem(key, dadosBackup[key]); }
                     alert("Backup restaurado com sucesso!");
                     location.reload();
-                } catch(err) {
-                    alert("Erro ao ler arquivo de backup.");
-                }
+                } catch(err) { alert("Erro ao ler arquivo de backup."); }
             };
             reader.readAsText(file);
         }
