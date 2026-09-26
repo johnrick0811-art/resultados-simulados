@@ -13,12 +13,11 @@
     <div class="max-w-6xl mx-auto bg-white p-8 rounded-xl shadow-lg mb-8">
         <header class="flex flex-col md:flex-row justify-between items-center mb-8 border-b pb-4 gap-4">
             <div>
-                <h1 class="text-2xl font-bold text-blue-600">🛠️ Painel do Desenvolvedor & Nuvem Local</h1>
-                <p class="text-xs text-gray-500 mt-1">Gerencie múltiplos simulados, controle dados e gere o banco de dados dos alunos.</p>
+                <h1 class="text-2xl font-bold text-blue-600">🛠️ Painel do Desenvolvedor & Automação GitHub</h1>
+                <p class="text-xs text-gray-500 mt-1">Gerencie múltiplos simulados, controle dados e publique diretamente para os alunos.</p>
             </div>
             <div class="flex items-center space-x-3 flex-wrap gap-2">
-                <button onclick="abrirModalTRI()" class="bg-indigo-600 text-white px-3 py-2 rounded-lg font-semibold text-xs hover:bg-indigo-700 transition shadow">⚙️ Laboratório & Calibração TRI</button>
-                <button onclick="sincronizarComNuvemManual()" class="bg-emerald-600 text-white px-3 py-2 rounded-lg font-semibold text-xs hover:bg-emerald-700 transition shadow">☁️ Gerar e Baixar dados.js</button>
+                <button onclick="abrirModalTRI()" class="bg-indigo-600 text-white px-3 py-2 rounded-lg font-semibold text-xs hover:bg-indigo-700 transition shadow">⚙️ Laboratório TRI</button>
                 <button onclick="exportarBackupJSON()" class="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg font-semibold text-xs hover:bg-gray-300 transition">📥 Backup JSON</button>
                 <label class="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg font-semibold text-xs hover:bg-gray-300 transition cursor-pointer">
                     📤 Restaurar <input type="file" id="file-backup" accept=".json" onchange="importarBackupJSON(event)" class="hidden">
@@ -26,6 +25,17 @@
                 <a href="index.html" target="_blank" class="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-blue-200 transition">🔗 Portal do Aluno</a>
             </div>
         </header>
+
+        <!-- CONFIGURAÇÃO DA AUTOMAÇÃO GITHUB -->
+        <div class="bg-gray-50 p-4 rounded-xl border border-gray-300 mb-6 shadow-inner">
+            <h3 class="font-bold text-gray-800 text-xs mb-2">⚙️ Credenciais de Automação GitHub (Salvo localmente no navegador)</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <input type="text" id="gh-user" placeholder="Usuário (ex: johnrick0811-art)" class="px-3 py-1.5 border rounded text-xs bg-white" onchange="salvarCredenciaisGitHub()">
+                <input type="text" id="gh-repo" placeholder="Repositório (ex: resultados-simulados)" class="px-3 py-1.5 border rounded text-xs bg-white" onchange="salvarCredenciaisGitHub()">
+                <input type="password" id="gh-token" placeholder="Token GitHub (ghp_...)" class="px-3 py-1.5 border rounded text-xs bg-white" onchange="salvarCredenciaisGitHub()">
+            </div>
+            <p class="text-[10px] text-gray-500 mt-1">Insira seus dados uma única vez. Eles ficam salvos apenas no seu navegador de forma segura.</p>
+        </div>
 
         <!-- SELETOR DINÂMICO DE SIMULADOS & GERENCIAMENTO -->
         <div class="bg-blue-50 p-6 rounded-xl border border-blue-200 mb-6 shadow-inner flex flex-col md:flex-row justify-between items-center gap-4">
@@ -100,11 +110,10 @@
             </div>
         </div>
 
-        <!-- BOTÕES DE AÇÃO -->
+        <!-- BOTÕES DE AÇÃO COM AUTOMAÇÃO -->
         <div class="flex flex-col md:flex-row justify-center items-center gap-4 mb-8">
-            <button onclick="salvarTudoNoSistema()" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:bg-blue-700 transition text-sm">💾 Salvar e Gerar dados.js</button>
-            <button onclick="exportarRelatorioExcel()" class="bg-emerald-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:bg-emerald-700 transition text-sm">📊 Exportar Notas (Excel)</button>
-            <p id="msg-sucesso" class="text-green-600 font-semibold text-sm hidden">✅ Arquivo dados.js gerado com sucesso!</p>
+            <button onclick="publicarAutomaticoGitHub()" class="bg-emerald-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:bg-emerald-700 transition text-sm flex items-center gap-2">🚀 Salvar e Publicar Automaticamente</button>
+            <p id="msg-sucesso" class="text-green-600 font-semibold text-sm hidden">✅ Publicado com sucesso no GitHub Pages!</p>
         </div>
 
         <!-- AUDITORIA & LISTA DE ALUNOS COM BUSCA E FILTROS -->
@@ -164,7 +173,7 @@
         </div>
     </div>
 
-    <!-- MODAL / LABORATÓRIO E CALIBRAÇÃO TRI INDEPENDENTE POR ÁREA -->
+    <!-- MODAL / LABORATÓRIO E CALIBRAÇÃO TRI -->
     <div id="modal-calibracao-tri" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <header class="bg-indigo-600 text-white p-5 flex justify-between items-center">
@@ -239,7 +248,7 @@
 
             <footer class="bg-gray-100 p-4 flex justify-end space-x-3 border-t">
                 <button onclick="fecharModalTRI()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition">Cancelar</button>
-                <button onclick="salvarParametrosLabTRI()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg text-xs font-bold transition shadow">Salvar Alterações e Gerar dados.js</button>
+                <button onclick="publicarAutomaticoGitHub()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg text-xs font-bold transition shadow">Salvar Alterações e Publicar no GitHub</button>
             </footer>
         </div>
     </div>
@@ -250,37 +259,91 @@
         let listaDados2Dia = [];
 
         window.onload = function() {
+            carregarCredenciaisGitHub();
             carregarListaSimulados();
             carregarAuditoria();
         };
 
-        function sincronizarComNuvemManual() {
+        function carregarCredenciaisGitHub() {
+            document.getElementById("gh-user").value = localStorage.getItem("aut_gh_user") || "";
+            document.getElementById("gh-repo").value = localStorage.getItem("aut_gh_repo") || "";
+            document.getElementById("gh-token").value = localStorage.getItem("aut_gh_token") || "";
+        }
+
+        function salvarCredenciaisGitHub() {
+            localStorage.setItem("aut_gh_user", document.getElementById("gh-user").value.trim());
+            localStorage.setItem("aut_gh_repo", document.getElementById("gh-repo").value.trim());
+            localStorage.setItem("aut_gh_token", document.getElementById("gh-token").value.trim());
+        }
+
+        async function publicarAutomaticoGitHub() {
+            salvarCredenciaisGitHub();
+            if (listaDados1Dia.length > 0) localStorage.setItem(`dados_1dia_sim${simAtual}`, JSON.stringify(listaDados1Dia));
+            if (listaDados2Dia.length > 0) localStorage.setItem(`dados_2dia_sim${simAtual}`, JSON.stringify(listaDados2Dia));
+
+            let user = document.getElementById("gh-user").value.trim();
+            let repo = document.getElementById("gh-repo").value.trim();
+            let token = document.getElementById("gh-token").value.trim();
+
+            if (!user || !repo || !token) {
+                alert("Por favor, preencha seu Usuário, Repositório e o Token do GitHub nas configurações acima antes de publicar.");
+                return;
+            }
+
             let dadosBackup = {};
             for(let i = 0; i < localStorage.length; i++) {
                 let key = localStorage.key(i);
-                dadosBackup[key] = localStorage.getItem(key);
+                if (!key.startsWith("aut_gh_")) {
+                    dadosBackup[key] = localStorage.getItem(key);
+                }
             }
 
             let conteudoArquivo = `// dados.js - Banco de dados local dos simulados\nwindow.SISTEMA_DADOS_SIMULADOS = {\n    "status": "ativo",\n    "localStorageBackup": ` + JSON.stringify(dadosBackup, null, 4) + `\n};`;
 
-            let blob = new Blob([conteudoArquivo], {type: "application/javascript"});
-            let url = URL.createObjectURL(blob);
-            let a = document.createElement("a");
-            a.href = url;
-            a.download = "dados.js";
-            a.click();
+            let path = "dados.js";
+            let urlAPI = `https://api.github.com/repos/${user}/${repo}/contents/${path}`;
 
-            alert("Arquivo 'dados.js' gerado e baixado com sucesso! Agora basta arrastá-lo para o seu repositório no GitHub.");
-        }
+            try {
+                let resGet = await fetch(urlAPI, {
+                    headers: { "Authorization": `token ${token}` }
+                });
+                let sha = null;
+                if (resGet.ok) {
+                    let fileData = await resGet.json();
+                    sha = fileData.sha;
+                }
 
-        async function salvarTudoNoSistema() {
-            if (listaDados1Dia.length > 0) localStorage.setItem(`dados_1dia_sim${simAtual}`, JSON.stringify(listaDados1Dia));
-            if (listaDados2Dia.length > 0) localStorage.setItem(`dados_2dia_sim${simAtual}`, JSON.stringify(listaDados2Dia));
-            
-            sincronizarComNuvemManual();
+                let contentBase64 = btoa(unescape(encodeURIComponent(conteudoArquivo)));
 
-            document.getElementById("msg-sucesso").classList.remove("hidden");
-            setTimeout(() => document.getElementById("msg-sucesso").classList.add("hidden"), 4000);
+                let bodyData = {
+                    message: "Atualização automática de dados via Painel do Desenvolvedor",
+                    content: contentBase64,
+                    branch: "main"
+                };
+                if (sha) bodyData.sha = sha;
+
+                let resPut = await fetch(urlAPI, {
+                    method: "PUT",
+                    headers: {
+                        "Authorization": `token ${token}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(bodyData)
+                });
+
+                if (resPut.ok) {
+                    document.getElementById("msg-sucesso").classList.remove("hidden");
+                    setTimeout(() => document.getElementById("msg-sucesso").classList.add("hidden"), 5000);
+                    alert("Sucesso! O arquivo dados.js foi atualizado no GitHub. O site dos alunos estará atualizado em 1 ou 2 minutos.");
+                } else {
+                    let errJson = await resPut.json();
+                    alert("Erro ao publicar no GitHub: " + (errJson.message || "Verifique suas credenciais."));
+                }
+            } catch (err) {
+                console.log(err);
+                alert("Erro de conexão ao tentar enviar para o GitHub.");
+            }
+
             carregarAuditoria();
         }
 
@@ -315,20 +378,13 @@
 
         function excluirSimuladoAtual() {
             let simuladosSalvos = JSON.parse(localStorage.getItem("lista_simulados_cadastrados") || '["1"]');
-            
             if(confirm(`Tem certeza que deseja excluir o ${simAtual}º Simulado e todos os seus dados?`)) {
                 localStorage.removeItem(`dados_1dia_sim${simAtual}`);
                 localStorage.removeItem(`dados_2dia_sim${simAtual}`);
                 localStorage.removeItem(`notas_redacao_sim${simAtual}`);
                 localStorage.removeItem(`config_areas_sim${simAtual}`);
-                
                 simuladosSalvos = simuladosSalvos.filter(s => s !== simAtual);
-                
-                // Se a lista zerar, reseta obrigatoriamente para o 1º Simulado
-                if (simuladosSalvos.length === 0) {
-                    simuladosSalvos = ["1"];
-                }
-                
+                if (simuladosSalvos.length === 0) simuladosSalvos = ["1"];
                 localStorage.setItem("lista_simulados_cadastrados", JSON.stringify(simuladosSalvos));
                 simAtual = simuladosSalvos[0];
                 carregarListaSimulados();
@@ -423,7 +479,6 @@
             let redacoes = JSON.parse(localStorage.getItem(`notas_redacao_sim${simAtual}`) || "{}");
             redacoes[normalizar(nomeAluno)] = parseFloat(valor) || 0;
             localStorage.setItem(`notas_redacao_sim${simAtual}`, JSON.stringify(redacoes));
-            sincronizarComNuvemManual();
             carregarAuditoria();
         }
 
@@ -821,46 +876,11 @@
             document.getElementById("sim-resultado-nota").innerText = score.toFixed(1);
         }
 
-        function salvarParametrosLabTRI() {
-            salvarParametrosAreaAtual();
-            sincronizarComNuvemManual();
-            carregarAuditoria();
-            alert("Parâmetros da área salvos e arquivo dados.js gerado com sucesso!");
-            fecharModalTRI();
-        }
-
-        function exportarRelatorioExcel() {
-            let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${simAtual}`) || "[]");
-            let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${simAtual}`) || "[]");
-            let redacoes = JSON.parse(localStorage.getItem(`notas_redacao_sim${simAtual}`) || "{}");
-            if(d1.length === 0 && d2.length === 0) { alert("Sem dados para exportar."); return; }
-            let mapaAlunos = new Map();
-            d1.forEach(i => { let n = i["Name"]||i["NAME"]||i["Nome"]; if(n) mapaAlunos.set(normalizar(n), {nome: n, turma: i["Class"]||i["Turma"]||"A", roll: i["Roll No"]||"-"}); });
-            d2.forEach(i => { let n = i["Name"]||i["NAME"]||i["Nome"]; if(n && !mapaAlunos.has(normalizar(n))) mapaAlunos.set(normalizar(n), {nome: n, turma: i["Class"]||i["Turma"]||"A", roll: i["Roll No"]||"-"}); });
-            let dadosExport = [];
-            mapaAlunos.forEach(aluno => {
-                let res = calcularNotasAlunoSimulado(aluno.nome, aluno.turma, aluno.roll, d1, d2, redacoes);
-                if(res) {
-                    dadosExport.push({
-                        "Chamada": aluno.roll, "Turma": aluno.turma, "Nome do Aluno": aluno.nome,
-                        "1º Dia": res.presente1 ? "Presente" : "Ausente", "2º Dia": res.presente2 ? "Presente" : "Ausente",
-                        "Linguagens (TRI)": Number(res.ling.toFixed(1)), "Humanas (TRI)": Number(res.hum.toFixed(1)),
-                        "Natureza (TRI)": Number(res.nat.toFixed(1)), "Matemática (TRI)": Number(res.mat.toFixed(1)),
-                        "Redação": Number(res.red.toFixed(0)), "Média Simples (Enem)": Number(res.media.toFixed(1))
-                    });
-                }
-            });
-            let ws = XLSX.utils.json_to_sheet(dadosExport);
-            let wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, `Simulado ${simAtual}`);
-            XLSX.writeFile(wb, `Relatorio_Simulado_${simAtual}.xlsx`);
-        }
-
         function exportarBackupJSON() {
             let dadosBackup = {};
             for(let i = 0; i < localStorage.length; i++) {
                 let key = localStorage.key(i);
-                dadosBackup[key] = localStorage.getItem(key);
+                if (!key.startsWith("aut_gh_")) dadosBackup[key] = localStorage.getItem(key);
             }
             let blob = new Blob([JSON.stringify(dadosBackup, null, 2)], {type: "application/json"});
             let url = URL.createObjectURL(blob);
@@ -880,8 +900,7 @@
                     for(let key in dadosBackup) {
                         localStorage.setItem(key, dadosBackup[key]);
                     }
-                    sincronizarComNuvemManual();
-                    alert("Backup restaurado e arquivo dados.js gerado com sucesso!");
+                    alert("Backup restaurado com sucesso!");
                     location.reload();
                 } catch(err) {
                     alert("Erro ao ler arquivo de backup.");
