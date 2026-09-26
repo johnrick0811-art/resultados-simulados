@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal do Aluno - Histórico de Simulados & Nuvem Supabase</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Biblioteca do Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -298,6 +298,15 @@
             return String(txt || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
         }
 
+        function alunoTemRespostas(reg) {
+            if (!reg) return false;
+            for (let q = 1; q <= 90; q++) {
+                let opt = reg[`Q ${q} Options`] !== undefined ? reg[`Q ${q} Options`] : reg[`Q${q} Options`];
+                if (opt !== undefined && opt !== null && String(opt).trim() !== "" && String(opt).trim() !== "-") return true;
+            }
+            return Number(reg["Correct Answers"] || reg["Acertos"] || 0) > 0;
+        }
+
         function realizarLoginAluno() {
             let simuladoEscolhido = document.getElementById("login-simulado").value;
             let turmaBuscada = document.getElementById("login-turma").value.trim().toUpperCase();
@@ -309,8 +318,6 @@
             }
 
             simAtual = simuladoEscolhido;
-            
-            // Lê o pré-cálculo salvo pelo desenvolvedor na nuvem/localStorage
             let preCalculoJSON = localStorage.getItem(`pre_calculo_alunos_sim_${simAtual}`);
             if (!preCalculoJSON) {
                 alert("Os dados deste simulado ainda não foram publicados ou processados pelo desenvolvedor.");
@@ -380,7 +387,6 @@
             document.getElementById("login-turma").value = "";
         }
 
-        // LEITURA ULTRA RÁPIDA: APENAS RECUPERA OS DADOS JÁ PRÉ-CALCULADOS
         function carregarPainelAluno() {
             if (!alunoLogado) return;
             document.getElementById("aluno-info-topo").innerText = `Olá, ${alunoLogado.nome} | Turma: ${alunoLogado.turma} | Nº Chamada: ${alunoLogado.roll}`;
@@ -396,7 +402,6 @@
             let resAtual = cacheAlunos[chaveAluno];
 
             if (!resAtual) {
-                // Tenta buscar apenas pelo nome se a chave exata não bater
                 for (let k in cacheAlunos) {
                     if (normalizar(cacheAlunos[k].nome) === normalizar(alunoLogado.nome)) {
                         resAtual = cacheAlunos[k];
@@ -414,11 +419,16 @@
             let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${simAtual}`) || "[]");
 
             function acharReg(lista) {
-                return lista.find(item => normalizar(item["Name"] || item["NAME"] || item["Nome"]) === normalizar(alunoLogado.nome));
+                return lista.find(item => {
+                    let nm = normalizar(item["Name"] || item["NAME"] || item["Nome"]);
+                    let rNo = String(item["Roll No"] || item["ROLLNO"] || item["RollNo"] || "").trim();
+                    let turma = String(item["Class"] || item["CLASS"] || item["Turma"] || "A").trim();
+                    return nm === normalizar(alunoLogado.nome) && turma === String(alunoLogado.turma).trim() && rNo === String(alunoLogado.roll).trim();
+                }) || lista.find(item => normalizar(item["Name"] || item["NAME"] || item["Nome"]) === normalizar(alunoLogado.nome));
             }
 
-            let reg1 = acharReg(d1);
-            let reg2 = acharReg(d2);
+            let reg1 = alunoTemRespostas(acharReg(d1)) ? acharReg(d1) : null;
+            let reg2 = alunoTemRespostas(acharReg(d2)) ? acharReg(d2) : null;
 
             let presencaTexto = `${reg1 ? "✅ Presente no 1º Dia" : "❌ Ausente no 1º Dia"} | ${reg2 ? "✅ Presente no 2º Dia" : "❌ Ausente no 2º Dia"}`;
             document.getElementById("texto-presenca").innerText = presencaTexto;
@@ -484,49 +494,59 @@
             document.getElementById("resumo-total-acertos").innerText = totalAcertos;
             document.getElementById("resumo-media-enem").innerText = resAtual.media.toFixed(1);
 
-            exibirRankingsProntos(resAtual);
+            exibirRankingsProntos(resAtual, cacheAlunos);
             atualizarGraficosAlunos(resAtual);
         }
 
-        function exibirRankingsProntos(resAtual) {
+        // CÁLCULO CORRETO DAS POSIÇÕES PRIVADAS POR ÁREA E GERAL (TURMA OU ESCOLA)
+        function exibirRankingsProntos(resAtual, cacheAlunos) {
             let tipoFiltro = document.getElementById("select-filtro-comparacao").value;
             document.getElementById("label-filtro-ranking").innerText = tipoFiltro === 'escola' ? 'Geral da Escola' : `Apenas da Turma ${alunoLogado.turma}`;
 
-            let rankingProntoJSON = localStorage.getItem(`ranking_pronto_sim_${simAtual}`);
-            if (!rankingProntoJSON) return;
-
-            let rankData = JSON.parse(rankingProntoJSON);
-            let nomeNorm = normalizar(alunoLogado.nome);
-
-            let idxGeral = "-º de -";
-            if (tipoFiltro === 'escola') {
-                let achado = rankData.geral.find(a => a.nome === nomeNorm);
-                if (achado) idxGeral = `${achado.pos}º de ${achado.total}`;
-            } else {
-                let turmaAlunos = rankData.turmas[alunoLogado.turma];
-                if (turmaAlunos) {
-                    let achado = turmaAlunos.find(a => a.nome === nomeNorm);
-                    if (achado) idxGeral = `${achado.pos}º de ${achado.total}`;
-                }
+            let listaFiltrada = [];
+            for (let k in cacheAlunos) {
+                let al = cacheAlunos[k];
+                if (tipoFiltro === 'turma' && al.turma.toUpperCase() !== alunoLogado.turma.toUpperCase()) continue;
+                listaFiltrada.push(al);
             }
 
-            document.getElementById("pos-geral").innerText = idxGeral;
-            document.getElementById("pos-ling").innerText = `-º`;
-            document.getElementById("pos-hum").innerText = `-º`;
-            document.getElementById("pos-nat").innerText = `-º`;
-            document.getElementById("pos-mat").innerText = `-º`;
+            if (listaFiltrada.length === 0) return;
+
+            let rGeral = [...listaFiltrada].sort((a, b) => b.media - a.media);
+            let rLing  = [...listaFiltrada].sort((a, b) => b.ling - a.ling);
+            let rHum   = [...listaFiltrada].sort((a, b) => b.hum - a.hum);
+            let rNat   = [...listaFiltrada].sort((a, b) => b.nat - a.nat);
+            let rMat   = [...listaFiltrada].sort((a, b) => b.mat - a.mat);
+
+            let nomeNorm = normalizar(alunoLogado.nome);
+            let idxGeral = rGeral.findIndex(a => normalizar(a.nome) === nomeNorm) + 1;
+            let idxLing  = rLing.findIndex(a => normalizar(a.nome) === nomeNorm) + 1;
+            let idxHum   = rHum.findIndex(a => normalizar(a.nome) === nomeNorm) + 1;
+            let idxNat   = rNat.findIndex(a => normalizar(a.nome) === nomeNorm) + 1;
+            let idxMat   = rMat.findIndex(a => normalizar(a.nome) === nomeNorm) + 1;
+            let totalGrupo = listaFiltrada.length;
+
+            document.getElementById("pos-geral").innerText = idxGeral > 0 ? `${idxGeral}º de ${totalGrupo}` : `-º de ${totalGrupo}`;
+            document.getElementById("pos-ling").innerText = idxLing > 0 ? `${idxLing}º` : `-º`;
+            document.getElementById("pos-hum").innerText = idxHum > 0 ? `${idxHum}º` : `-º`;
+            document.getElementById("pos-nat").innerText = idxNat > 0 ? `${idxNat}º` : `-º`;
+            document.getElementById("pos-mat").innerText = idxMat > 0 ? `${idxMat}º` : `-º`;
 
             let iconeEl = document.getElementById("icone-incentivo");
             let tituloEl = document.getElementById("titulo-incentivo");
             let textoEl = document.getElementById("texto-incentivo");
             let cardMsg = document.getElementById("card-mensagem-incentivo");
 
-            let posNum = parseInt(idxGeral) || 999;
-            if (posNum <= 10) {
+            if (idxGeral > 0 && idxGeral <= 10) {
                 cardMsg.className = "bg-gradient-to-r from-amber-500 to-orange-600 text-white p-5 rounded-xl shadow-md flex items-center space-x-4";
                 iconeEl.innerText = "🏆";
                 tituloEl.innerText = `Meus parabéns, ${alunoLogado.nome.split(' ')[0]}! Você faz parte dos 10 primeiros colocados!`;
                 textoEl.innerText = `Sua dedicação está trazendo resultados excepcionais. Continue focado para manter o topo rumo à aprovação!`;
+            } else if (idxGeral > 0 && idxGeral <= Math.ceil(totalGrupo * 0.3)) {
+                cardMsg.className = "bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-5 rounded-xl shadow-md flex items-center space-x-4";
+                iconeEl.innerText = "🚀";
+                tituloEl.innerText = `Excelente desempenho, ${alunoLogado.nome.split(' ')[0]}! Você está no topo do grupo!`;
+                textoEl.innerText = `Você está muito bem posicionado. Analise os detalhes das questões para alcançar as posições de destaque máximo!`;
             } else {
                 cardMsg.className = "bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-5 rounded-xl shadow-md flex items-center space-x-4";
                 iconeEl.innerText = "💡";
