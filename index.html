@@ -81,32 +81,27 @@
                     <p id="texto-presenca" class="text-sm font-semibold text-blue-900">Verificando presença...</p>
                 </div>
 
-                <!-- CARDS DE NOTAS TRI E QUANTIDADE DE ACERTOS -->
+                <!-- CARDS DE NOTAS TRI (SEM CONTAGEM DE ACERTOS) -->
                 <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
                     <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
                         <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Linguagens</p>
-                        <p id="card-ling" class="text-xl font-extrabold text-indigo-600 mt-1">0.0</p>
-                        <p id="acertos-ling" class="text-xs text-gray-500 mt-1">(0 acertos)</p>
+                        <p id="card-ling" class="text-2xl font-extrabold text-indigo-600 mt-1">0.0</p>
                     </div>
                     <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
                         <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Humanas</p>
-                        <p id="card-hum" class="text-xl font-extrabold text-green-600 mt-1">0.0</p>
-                        <p id="acertos-hum" class="text-xs text-gray-500 mt-1">(0 acertos)</p>
+                        <p id="card-hum" class="text-2xl font-extrabold text-green-600 mt-1">0.0</p>
                     </div>
                     <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
                         <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Natureza</p>
-                        <p id="card-nat" class="text-xl font-extrabold text-yellow-600 mt-1">0.0</p>
-                        <p id="acertos-nat" class="text-xs text-gray-500 mt-1">(0 acertos)</p>
+                        <p id="card-nat" class="text-2xl font-extrabold text-yellow-600 mt-1">0.0</p>
                     </div>
                     <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
                         <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Matemática</p>
-                        <p id="card-mat" class="text-xl font-extrabold text-purple-600 mt-1">0.0</p>
-                        <p id="acertos-mat" class="text-xs text-gray-500 mt-1">(0 acertos)</p>
+                        <p id="card-mat" class="text-2xl font-extrabold text-purple-600 mt-1">0.0</p>
                     </div>
                     <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 col-span-2 md:col-span-1">
                         <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Redação</p>
-                        <p id="card-red" class="text-xl font-extrabold text-pink-600 mt-1">0 pts</p>
-                        <p class="text-xs text-gray-400 mt-1">Nota Oficial</p>
+                        <p id="card-red" class="text-2xl font-extrabold text-pink-600 mt-1">0 pts</p>
                     </div>
                 </div>
 
@@ -160,14 +155,10 @@
                             </div>
                             <div class="relative h-56"><canvas id="graficoDesempenhoAluno"></canvas></div>
                         </div>
-                        <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t">
-                            <div class="text-center">
-                                <p class="text-[10px] font-bold text-gray-400 uppercase">Total Acertos</p>
-                                <p id="resumo-total-acertos" class="text-xl font-black text-blue-600">0</p>
-                            </div>
-                            <div class="text-center">
+                        <div class="grid grid-cols-1 gap-4 mt-4 pt-4 border-t text-center">
+                            <div>
                                 <p class="text-[10px] font-bold text-gray-400 uppercase">Média Simples (Enem)</p>
-                                <p id="resumo-media-enem" class="text-xl font-extrabold text-blue-900">0.0</p>
+                                <p id="resumo-media-enem" class="text-2xl font-extrabold text-blue-900">0.0</p>
                             </div>
                         </div>
                     </div>
@@ -433,7 +424,6 @@
             let presencaTexto = `${reg1 ? "✅ Presente no 1º Dia" : "❌ Ausente no 1º Dia"} | ${reg2 ? "✅ Presente no 2º Dia" : "❌ Ausente no 2º Dia"}`;
             document.getElementById("texto-presenca").innerText = presencaTexto;
 
-            // Renderiza tabela de questões instantaneamente
             const tabelaQuestoesHTML = document.getElementById("tabela-questoes-aluno");
             let linhasHTML = "";
             let cfg = JSON.parse(localStorage.getItem(`config_areas_sim${simAtual}`) || '{}');
@@ -481,24 +471,18 @@
 
             tabelaQuestoesHTML.innerHTML = linhasHTML;
 
-            let totalAcertos = resAtual.acertosLing + resAtual.acertosHum + resAtual.acertosNat + resAtual.acertosMat;
+            // Atualiza os cards sem exibir contagem de acertos
             document.getElementById("card-ling").innerText = resAtual.ling.toFixed(1);
-            document.getElementById("acertos-ling").innerText = `(${resAtual.acertosLing} acertos)`;
             document.getElementById("card-hum").innerText = resAtual.hum.toFixed(1);
-            document.getElementById("acertos-hum").innerText = `(${resAtual.acertosHum} acertos)`;
             document.getElementById("card-nat").innerText = resAtual.nat.toFixed(1);
-            document.getElementById("acertos-nat").innerText = `(${resAtual.acertosNat} acertos)`;
             document.getElementById("card-mat").innerText = resAtual.mat.toFixed(1);
-            document.getElementById("acertos-mat").innerText = `(${resAtual.acertosMat} acertos)`;
             document.getElementById("card-red").innerText = `${resAtual.red} pts`;
-            document.getElementById("resumo-total-acertos").innerText = totalAcertos;
             document.getElementById("resumo-media-enem").innerText = resAtual.media.toFixed(1);
 
             exibirRankingsProntos(resAtual, cacheAlunos);
             atualizarGraficosAlunos(resAtual);
         }
 
-        // EXIBIÇÃO COMPLETA DAS COLOCAÇÕES PRIVADAS POR ÁREA E GERAL
         function exibirRankingsProntos(resAtual, cacheAlunos) {
             let tipoFiltro = document.getElementById("select-filtro-comparacao").value;
             document.getElementById("label-filtro-ranking").innerText = tipoFiltro === 'escola' ? 'Geral da Escola' : `Apenas da Turma ${alunoLogado.turma}`;
@@ -671,8 +655,8 @@
             doc.rect(14, 83, 182, 10, "F");
             doc.setFontSize(10);
             doc.text("Área de Conhecimento", 18, 90);
-            doc.text("Acertos", 95, 90);
-            doc.text("Nota TRI / Oficial", 145, 90);
+            doc.text("Acertos", 100, 90);
+            doc.text("Nota TRI / Oficial", 150, 90);
 
             let areas = [
                 { nome: "Linguagens, Códigos e suas Tecnologias", acertos: res.acertosLing, nota: res.ling.toFixed(1) },
@@ -690,9 +674,9 @@
                 }
                 doc.setFont("helvetica", "normal");
                 doc.text(a.nome, 18, yPos);
-                doc.text(String(a.acertos), 100, yPos);
+                doc.text(String(a.acertos), 105, yPos);
                 doc.setFont("helvetica", "bold");
-                doc.text(String(a.nota), 150, yPos);
+                doc.text(String(a.nota), 155, yPos);
                 yPos += 10;
             });
 
