@@ -220,6 +220,15 @@
             });
         }
 
+        function alunoTemRespostas(reg) {
+            if (!reg) return false;
+            for (let q = 1; q <= 90; q++) {
+                let opt = reg[`Q ${q} Options`] !== undefined ? reg[`Q ${q} Options`] : reg[`Q${q} Options`];
+                if (opt !== undefined && opt !== null && String(opt).trim() !== "" && String(opt).trim() !== "-") return true;
+            }
+            return Number(reg["Correct Answers"] || reg["Acertos"] || 0) > 0;
+        }
+
         function realizarLoginAluno() {
             let simuladoEscolhido = document.getElementById("login-simulado").value;
             let turmaBuscada = document.getElementById("login-turma").value.trim().toUpperCase();
@@ -328,8 +337,12 @@
                 }) || lista.find(item => normalizar(item["Name"] || item["NAME"] || item["Nome"]) === normalizar(alunoLogado.nome));
             }
 
-            let reg1 = acharReg(d1);
-            let reg2 = acharReg(d2);
+            let regBruto1 = acharReg(d1);
+            let regBruto2 = acharReg(d2);
+
+            let reg1 = alunoTemRespostas(regBruto1) ? regBruto1 : null;
+            let reg2 = alunoTemRespostas(regBruto2) ? regBruto2 : null;
+
             if (!reg1 && !reg2) return null;
 
             let ling = 0, hum = 0, nat = 0, mat = 0;
@@ -428,8 +441,11 @@
                 }) || lista.find(item => normalizar(item["Name"] || item["NAME"] || item["Nome"]) === normalizar(alunoLogado.nome));
             }
 
-            let reg1 = acharReg(d1);
-            let reg2 = acharReg(d2);
+            let regBruto1 = acharReg(d1);
+            let regBruto2 = acharReg(d2);
+
+            let reg1 = alunoTemRespostas(regBruto1) ? regBruto1 : null;
+            let reg2 = alunoTemRespostas(regBruto2) ? regBruto2 : null;
 
             let presencaTexto = `${reg1 ? "✅ Presente no 1º Dia" : "❌ Ausente no 1º Dia"} | ${reg2 ? "✅ Presente no 2º Dia" : "❌ Ausente no 2º Dia"}`;
             document.getElementById("texto-presenca").innerText = presencaTexto;
