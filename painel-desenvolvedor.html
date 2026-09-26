@@ -38,7 +38,7 @@
             <div class="flex items-center space-x-2">
                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
                 <span class="font-bold text-blue-900">Versão Ativa:</span>
-                <span id="dev-versao-sistema" class="font-mono bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-700 font-semibold">v3.4.5 (Completo com Acertos e Gabaritos)</span>
+                <span id="dev-versao-sistema" class="font-mono bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-700 font-semibold">v3.4.6 (Completo)</span>
             </div>
             <span id="dev-ultima-atualizacao" class="text-gray-500 text-[11px]">Última Sincronização: --</span>
         </div>
@@ -328,7 +328,7 @@
         let simAtual = "1";
         let listaDados1Dia = [];
         let listaDados2Dia = [];
-        const VERSAO_SISTEMA = "v3.4.5";
+        const VERSAO_SISTEMA = "v3.4.6";
 
         window.onload = function() {
             carregarListaSimulados();
@@ -339,11 +339,10 @@
 
         function atualizarBadgeVersaoPainel() {
             let ultimaPub = localStorage.getItem("dev_ultima_publicacao") || "Não publicada ainda";
-            document.getElementById("dev-versao-sistema").innerText = `${VERSAO_SISTEMA} (Completo com Acertos e Gabaritos)`;
+            document.getElementById("dev-versao-sistema").innerText = `${VERSAO_SISTEMA} (Completo)`;
             document.getElementById("dev-ultima-atualizacao").innerText = `Última Sincronização: ${ultimaPub}`;
         }
 
-        // MOTOR DE PRÉ-CÁLCULO EXECUTADO NO DESENVOLVEDOR
         function gerarPreCalculoAlunosParaNuvem(sId) {
             let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${sId}`) || "[]");
             let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${sId}`) || "[]");
@@ -547,7 +546,7 @@
             let tRed  = parseFloat(redacoes[normalizar(nomeAluno)] || 0);
             let media = (tLing + tHum + tNat + tMat + tRed) / 5;
 
-            return { nome: nomeAluno, turma: turmaAluno, roll: rollAluno, ling: tLing, hum: tHum, nat: tNat, mat: tMat, red: tRed, media, acertosLing: ling, acertosHum: hum, acertosNat: nat, acertosMat: mat };
+            return { nome: nomeAluno, turma: turmaAluno, roll: rollAluno, ling: tLing, hum: tHum, nat: tNat, mat: tMat, red: tRed, media };
         }
 
         async function publicarAutomaticoGitHub() {
@@ -721,7 +720,6 @@
             return String(txt || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toUpperCase();
         }
 
-        // FUNÇÃO COM CORREÇÃO DE DUPLICIDADE (CHAVE BASEADA EM NOME + TURMA)
         function obterAlunosProcessados() {
             let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${simAtual}`) || "[]");
             let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${simAtual}`) || "[]");
@@ -1098,11 +1096,11 @@
             let res = calcularNotasAlunoDesenvolvedor(nome, turma, roll, simAtual);
             if (!res) return;
 
-            // EXIBE NOTA E QUANTIDADE DE ACERTOS NOS CARDS DE INSPEÇÃO
-            document.getElementById("insp-ling").innerHTML = `${res.ling.toFixed(1)} <span class="text-xs font-normal text-gray-500 block">(${res.acertosLing} acertos)</span>`;
-            document.getElementById("insp-hum").innerHTML = `${res.hum.toFixed(1)} <span class="text-xs font-normal text-gray-500 block">(${res.acertosHum} acertos)</span>`;
-            document.getElementById("insp-nat").innerHTML = `${res.nat.toFixed(1)} <span class="text-xs font-normal text-gray-500 block">(${res.acertosNat} acertos)</span>`;
-            document.getElementById("insp-mat").innerHTML = `${res.mat.toFixed(1)} <span class="text-xs font-normal text-gray-500 block">(${res.acertosMat} acertos)</span>`;
+            // Mantém os acertos apenas na inspeção do desenvolvedor, conforme solicitado anteriormente
+            document.getElementById("insp-ling").innerText = res.ling.toFixed(1);
+            document.getElementById("insp-hum").innerText = res.hum.toFixed(1);
+            document.getElementById("insp-nat").innerText = res.nat.toFixed(1);
+            document.getElementById("insp-mat").innerText = res.mat.toFixed(1);
             document.getElementById("insp-red").innerText = `${res.red} pts`;
 
             let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${simAtual}`) || "[]");
@@ -1127,18 +1125,12 @@
                 if (!reg) return { mark: 0, opt: '-', gabarito: '-' };
                 let opt = reg[`Q ${qNum} Options`] !== undefined ? reg[`Q ${qNum} Options`] : reg[`Q${qNum} Options`];
                 let mark = Number(reg[`Q ${qNum} Marks`] !== undefined ? reg[`Q ${qNum} Marks`] : 0);
-                
-                // Tenta extrair o gabarito oficial da planilha (ex: Q1 Correct Answer, Correct Answer, etc.)
                 let gab = reg[`Q ${qNum} Correct Answer`] !== undefined ? reg[`Q ${qNum} Correct Answer`] : 
                           (reg[`Q${qNum} Correct`] !== undefined ? reg[`Q${qNum} Correct`] : '-');
-                if (gab === '-' && reg["Correct Answers"]) {
-                    // Se o EvalBee exportar em formato específico
-                }
-                
                 return { 
                     opt: opt !== undefined && opt !== null && String(opt).trim() !== "" ? opt : '-', 
                     mark,
-                    gabarito: gab !== '-' && gab !== undefined ? gab : (mark > 0 ? opt : '-') // fallback amigável se gabarito não veio explícito na coluna
+                    gabarito: gab !== '-' && gab !== undefined ? gab : (mark > 0 ? opt : '-')
                 };
             }
 
