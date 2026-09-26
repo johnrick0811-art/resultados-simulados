@@ -234,7 +234,6 @@
     </footer>
 
     <script>
-        // Configuração do Supabase
         const SUPABASE_URL = "https://ayclwucigtoufybvmtll.supabase.co";
         const SUPABASE_KEY = "sb_publishable_uXpJrC1SkAXsyqLqxqdFZw_RvEsxLXy";
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -243,6 +242,10 @@
         let simAtual = "1";
         let graficoAlunoInstance = null;
         let graficoHistoricoInstance = null;
+
+        // Cache em memória para evitar leituras repetidas e reprocessamento
+        let cacheNotasAluno = {};
+        let cacheRankingSimulado = {};
 
         async function carregarDadosDaNuvem() {
             const indicador = document.getElementById("indicador-status-nuvem");
@@ -342,6 +345,10 @@
                 simulado: simAtual
             };
 
+            // Limpa o cache ao trocar de aluno ou login
+            cacheNotasAluno = {};
+            cacheRankingSimulado = {};
+
             localStorage.setItem("aluno_logado_atual", JSON.stringify(alunoLogado));
             document.getElementById("tela-login").classList.add("hidden");
             document.getElementById("painel-aluno").classList.remove("hidden");
@@ -373,6 +380,8 @@
 
         function sairDoPortal() {
             localStorage.removeItem("aluno_logado_atual");
+            cacheNotasAluno = {};
+            cacheRankingSimulado = {};
             document.getElementById("painel-aluno").classList.add("hidden");
             document.getElementById("tela-login").classList.remove("hidden");
             document.getElementById("login-busca").value = "";
@@ -395,7 +404,11 @@
             return configSalva ? JSON.parse(configSalva) : def;
         }
 
+        // CÁLCULO OTIMIZADO COM CACHE EM MEMÓRIA
         function calcularNotasAlunoParaSimuladoEspecifico(nomeAluno, turmaAluno, rollAluno, sId) {
+            let cacheKey = `${sId}_${nomeAluno}_${turmaAluno}_${rollAluno}`;
+            if (cacheNotasAluno[cacheKey]) return cacheNotasAluno[cacheKey];
+
             let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${sId}`) || "[]");
             let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${sId}`) || "[]");
             let redacoes = JSON.parse(localStorage.getItem(`notas_redacao_sim${sId}`) || "{}");
@@ -484,7 +497,9 @@
             let tRed  = parseFloat(redacoes[normalizar(nomeAluno)] || 0);
             let media = (tLing + tHum + tNat + tMat + tRed) / 5;
 
-            return { nome: nomeAluno, turma: turmaAluno, roll: rollAluno, ling: tLing, hum: tHum, nat: tNat, mat: tMat, red: tRed, media, acertosLing: ling, acertosHum: hum, acertosNat: nat, acertosMat: mat };
+            let resultado = { nome: nomeAluno, turma: turmaAluno, roll: rollAluno, ling: tLing, hum: tHum, nat: tNat, mat: tMat, red: tRed, media, acertosLing: ling, acertosHum: hum, acertosNat: nat, acertosMat: mat };
+            cacheNotasAluno[cacheKey] = resultado;
+            return resultado;
         }
 
         function calcularNotasAlunoParaSimulado(sId) {
@@ -515,7 +530,7 @@
             document.getElementById("texto-presenca").innerText = presencaTexto;
 
             const tabelaQuestoesHTML = document.getElementById("tabela-questoes-aluno");
-            let linhasHTML = ""; // Acumulador de HTML para renderização instantânea
+            let linhasHTML = ""; 
 
             function obterDado(reg, qNum) {
                 if (!reg) return { mark: 0, opt: '-' };
@@ -528,7 +543,6 @@
             let resAtual = calcularNotasAlunoParaSimulado(simAtual);
             if (!resAtual) return;
 
-            // 1º Dia (Q1 a Q90)
             if (reg1) {
                 for (let q = 1; q <= 90; q++) {
                     let area = q <= 45 ? 'ling' : 'hum';
@@ -550,7 +564,6 @@
                 }
             }
 
-            // 2º Dia (Q91 a Q180)
             if (reg2) {
                 for (let qFile = 1; qFile <= 90; qFile++) {
                     let qReal = qFile + 90;
@@ -573,7 +586,6 @@
                 }
             }
 
-            // Injeta todas as 180 linhas de uma única vez no DOM
             tabelaQuestoesHTML.innerHTML = linhasHTML;
 
             let totalAcertos = resAtual.acertosLing + resAtual.acertosHum + resAtual.acertosNat + resAtual.acertosMat;
@@ -593,33 +605,41 @@
             atualizarGraficosAlunos(resAtual);
         }
 
+        // RANKING COM CACHE POR SIMULADO PARA FLUIDEZ MÁXIMA
         function calcularRankingsPrivados(resAtual) {
             let tipoFiltro = document.getElementById("select-filtro-comparacao").value;
             document.getElementById("label-filtro-ranking").innerText = tipoFiltro === 'escola' ? 'Geral da Escola' : `Apenas da Turma ${alunoLogado.turma}`;
 
-            let mapaAlunos = new Map();
-            let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${simAtual}`) || "[]");
-            let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${simAtual}`) || "[]");
+            let cacheRankKey = `${simAtual}_${tipoFiltro}`;
+            let listaAlunosProcessada = cacheRankingSimulado[cacheRankKey];
 
-            function processarLista(lista) {
-                lista.forEach(item => {
-                    let nome = item["Name"] || item["NAME"] || item["Nome"] || "";
-                    if (!nome) return;
-                    let rNo = String(item["Roll No"] || item["ROLLNO"] || "").trim();
-                    let turma = item["Class"] || item["CLASS"] || item["Turma"] || "A";
-                    let chave = `${normalizar(nome)}_${turma}`;
-                    if (!mapaAlunos.has(chave)) mapaAlunos.set(chave, { nome, turma, roll: rNo });
+            if (!listaAlunosProcessada) {
+                let mapaAlunos = new Map();
+                let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${simAtual}`) || "[]");
+                let d2 = JSON.parse(localStorage.getItem(`dados_2dia_sim${simAtual}`) || "[]");
+
+                function processarLista(lista) {
+                    lista.forEach(item => {
+                        let nome = item["Name"] || item["NAME"] || item["Nome"] || "";
+                        if (!nome) return;
+                        let rNo = String(item["Roll No"] || item["ROLLNO"] || "").trim();
+                        let turma = item["Class"] || item["CLASS"] || item["Turma"] || "A";
+                        let chave = `${normalizar(nome)}_${turma}`;
+                        if (!mapaAlunos.has(chave)) mapaAlunos.set(chave, { nome, turma, roll: rNo });
+                    });
+                }
+                processarLista(d1);
+                processarLista(d2);
+
+                listaAlunosProcessada = [];
+                mapaAlunos.forEach(al => {
+                    if (tipoFiltro === 'turma' && al.turma !== alunoLogado.turma) return;
+                    let resAl = calcularNotasAlunoParaSimuladoEspecifico(al.nome, al.turma, al.roll, simAtual);
+                    if (resAl) listaAlunosProcessada.push(resAl);
                 });
-            }
-            processarLista(d1);
-            processarLista(d2);
 
-            let listaAlunosProcessada = [];
-            mapaAlunos.forEach(al => {
-                if (tipoFiltro === 'turma' && al.turma !== alunoLogado.turma) return;
-                let resAl = calcularNotasAlunoParaSimuladoEspecifico(al.nome, al.turma, al.roll, simAtual);
-                if (resAl) listaAlunosProcessada.push(resAl);
-            });
+                cacheRankingSimulado[cacheRankKey] = listaAlunosProcessada;
+            }
 
             if (listaAlunosProcessada.length === 0) return;
 
