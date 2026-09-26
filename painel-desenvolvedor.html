@@ -278,8 +278,13 @@
 
         async function publicarAutomaticoGitHub() {
             salvarCredenciaisGitHub();
+            
+            // Garante que os dados da sessão atual estejam salvos no localStorage antes do pacote
             if (listaDados1Dia.length > 0) localStorage.setItem(`dados_1dia_sim${simAtual}`, JSON.stringify(listaDados1Dia));
             if (listaDados2Dia.length > 0) localStorage.setItem(`dados_2dia_sim${simAtual}`, JSON.stringify(listaDados2Dia));
+
+            // Garante que salvamentos pendentes do laboratório ou parâmetros atuais sejam consolidados
+            salvarParametrosAreaAtual();
 
             let user = document.getElementById("gh-user").value.trim();
             let repo = document.getElementById("gh-repo").value.trim();
@@ -316,7 +321,7 @@
                 let contentBase64 = btoa(unescape(encodeURIComponent(conteudoArquivo)));
 
                 let bodyData = {
-                    message: "Atualização automática de dados via Painel do Desenvolvedor",
+                    message: "Atualização automática de dados e TRI via Painel do Desenvolvedor",
                     content: contentBase64,
                     branch: "main"
                 };
@@ -334,7 +339,7 @@
                 if (resPut.ok) {
                     document.getElementById("msg-sucesso").classList.remove("hidden");
                     setTimeout(() => document.getElementById("msg-sucesso").classList.add("hidden"), 5000);
-                    alert("Sucesso! O arquivo dados.js foi atualizado no GitHub. O site dos alunos estará atualizado em 1 ou 2 minutos.");
+                    alert("Sucesso! O arquivo dados.js com as novas configurações da TRI foi atualizado no GitHub. O portal dos alunos refletirá os ajustes em instantes.");
                 } else {
                     let errJson = await resPut.json();
                     alert("Erro ao publicar no GitHub: " + (errJson.message || "Verifique suas credenciais."));
