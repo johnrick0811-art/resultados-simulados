@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal do Aluno - Histórico de Simulados & Nuvem Supabase</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Biblioteca do Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -498,7 +498,7 @@
             atualizarGraficosAlunos(resAtual);
         }
 
-        // CÁLCULO CORRETO DAS POSIÇÕES PRIVADAS POR ÁREA E GERAL (TURMA OU ESCOLA)
+        // EXIBIÇÃO COMPLETA DAS COLOCAÇÕES PRIVADAS POR ÁREA E GERAL
         function exibirRankingsProntos(resAtual, cacheAlunos) {
             let tipoFiltro = document.getElementById("select-filtro-comparacao").value;
             document.getElementById("label-filtro-ranking").innerText = tipoFiltro === 'escola' ? 'Geral da Escola' : `Apenas da Turma ${alunoLogado.turma}`;
