@@ -634,7 +634,7 @@
             });
         }
 
-        // --- GERAÇÃO DO BOLETIM EM PDF (BLINDADA E CORRIGIDA) ---
+        // --- GERAÇÃO DO BOLETIM EM PDF (BLINDADA COM BLOB) ---
         function gerarBoletimPDF() {
             if (!alunoLogado) return;
             let res = calcularNotasAlunoParaSimulado(simAtual);
@@ -749,7 +749,18 @@
             doc.text("Autenticado em: " + dataHoraFormatada, 14, 285);
 
             let nomeArquivo = "Boletim_" + simAtual + "Simulado_" + alunoLogado.nome.replace(/\s+/g, '_') + ".pdf";
-            doc.save(nomeArquivo);
+            
+            try {
+                let blobPDF = doc.output("blob");
+                let link = document.createElement("a");
+                link.href = window.URL.createObjectURL(blobPDF);
+                link.download = nomeArquivo;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } catch (erro) {
+                doc.save(nomeArquivo);
+            }
         }
     </script>
 </body>
