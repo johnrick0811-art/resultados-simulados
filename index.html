@@ -199,18 +199,13 @@
             }
 
             carregarOpcoesSimuladoLogin();
-            alunoLogado = JSON.parse(localStorage.getItem("aluno_logado_atual") || "null");
+            
+            // Garante que SEMPRE limpa qualquer sessão anterior ao abrir o portal, forçando a tela de login
+            localStorage.removeItem("aluno_logado_atual");
+            alunoLogado = null;
 
-            if (alunoLogado) {
-                simAtual = alunoLogado.simulado || "1";
-                document.getElementById("tela-login").classList.add("hidden");
-                document.getElementById("painel-aluno").classList.remove("hidden");
-                carregarListaSimuladosAluno();
-                carregarPainelAluno();
-            } else {
-                document.getElementById("tela-login").classList.remove("hidden");
-                document.getElementById("painel-aluno").classList.add("hidden");
-            }
+            document.getElementById("tela-login").classList.remove("hidden");
+            document.getElementById("painel-aluno").classList.add("hidden");
         };
 
         function carregarOpcoesSimuladoLogin() {
