@@ -8,19 +8,17 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Inclui a ponte de nuvem -->
-    <script src="config-nuvem.js"></script>
 </head>
 <body class="bg-gray-100 font-sans p-6">
     <div class="max-w-6xl mx-auto bg-white p-8 rounded-xl shadow-lg mb-8">
         <header class="flex flex-col md:flex-row justify-between items-center mb-8 border-b pb-4 gap-4">
             <div>
-                <h1 class="text-2xl font-bold text-blue-600">🛠️ Painel do Desenvolvedor & Nuvem</h1>
-                <p class="text-xs text-gray-500 mt-1">Gerencie múltiplos simulados, controle dados e sincronize globalmente.</p>
+                <h1 class="text-2xl font-bold text-blue-600">🛠️ Painel do Desenvolvedor & Nuvem Local</h1>
+                <p class="text-xs text-gray-500 mt-1">Gerencie múltiplos simulados, controle dados e gere o banco de dados dos alunos.</p>
             </div>
             <div class="flex items-center space-x-3 flex-wrap gap-2">
                 <button onclick="abrirModalTRI()" class="bg-indigo-600 text-white px-3 py-2 rounded-lg font-semibold text-xs hover:bg-indigo-700 transition shadow">⚙️ Laboratório & Calibração TRI</button>
-                <button onclick="sincronizarComNuvemManual()" class="bg-emerald-600 text-white px-3 py-2 rounded-lg font-semibold text-xs hover:bg-emerald-700 transition shadow">☁️ Sincronizar Nuvem</button>
+                <button onclick="sincronizarComNuvemManual()" class="bg-emerald-600 text-white px-3 py-2 rounded-lg font-semibold text-xs hover:bg-emerald-700 transition shadow">☁️ Gerar e Baixar dados.js</button>
                 <button onclick="exportarBackupJSON()" class="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg font-semibold text-xs hover:bg-gray-300 transition">📥 Backup JSON</button>
                 <label class="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg font-semibold text-xs hover:bg-gray-300 transition cursor-pointer">
                     📤 Restaurar <input type="file" id="file-backup" accept=".json" onchange="importarBackupJSON(event)" class="hidden">
@@ -104,9 +102,9 @@
 
         <!-- BOTÕES DE AÇÃO -->
         <div class="flex flex-col md:flex-row justify-center items-center gap-4 mb-8">
-            <button onclick="salvarTudoNoSistema()" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:bg-blue-700 transition text-sm">💾 Salvar e Sincronizar na Nuvem</button>
+            <button onclick="salvarTudoNoSistema()" class="bg-blue-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:bg-blue-700 transition text-sm">💾 Salvar e Gerar dados.js</button>
             <button onclick="exportarRelatorioExcel()" class="bg-emerald-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg hover:bg-emerald-700 transition text-sm">📊 Exportar Notas (Excel)</button>
-            <p id="msg-sucesso" class="text-green-600 font-semibold text-sm hidden">✅ Salvo e sincronizado na nuvem com sucesso!</p>
+            <p id="msg-sucesso" class="text-green-600 font-semibold text-sm hidden">✅ Arquivo dados.js gerado com sucesso!</p>
         </div>
 
         <!-- AUDITORIA & LISTA DE ALUNOS COM BUSCA E FILTROS -->
@@ -241,7 +239,7 @@
 
             <footer class="bg-gray-100 p-4 flex justify-end space-x-3 border-t">
                 <button onclick="fecharModalTRI()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition">Cancelar</button>
-                <button onclick="salvarParametrosLabTRI()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg text-xs font-bold transition shadow">Salvar Alterações e Atualizar Sistema</button>
+                <button onclick="salvarParametrosLabTRI()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg text-xs font-bold transition shadow">Salvar Alterações e Gerar dados.js</button>
             </footer>
         </div>
     </div>
@@ -251,36 +249,35 @@
         let listaDados1Dia = [];
         let listaDados2Dia = [];
 
-        window.onload = async function() {
-            // Puxa os dados da nuvem ao abrir o painel do desenvolvedor
-            let dadosNuvem = await carregarDadosDaNuvem();
-            if (dadosNuvem && dadosNuvem.localStorageBackup) {
-                for(let k in dadosNuvem.localStorageBackup) {
-                    localStorage.setItem(k, dadosNuvem.localStorageBackup[k]);
-                }
-            }
+        window.onload = function() {
             carregarListaSimulados();
             carregarAuditoria();
         };
 
-        async function sincronizarComNuvemManual() {
+        function sincronizarComNuvemManual() {
             let dadosBackup = {};
             for(let i = 0; i < localStorage.length; i++) {
                 let key = localStorage.key(i);
                 dadosBackup[key] = localStorage.getItem(key);
             }
-            await salvarDadosNaNuvem({ 
-                localStorageBackup: dadosBackup, 
-                ultimaAtualizacao: new Date().toISOString() 
-            });
-            alert("Dados sincronizados com sucesso na nuvem para os alunos!");
+
+            let conteudoArquivo = `// dados.js - Banco de dados local dos simulados\nwindow.SISTEMA_DADOS_SIMULADOS = {\n    "status": "ativo",\n    "localStorageBackup": ` + JSON.stringify(dadosBackup, null, 4) + `\n};`;
+
+            let blob = new Blob([conteudoArquivo], {type: "application/javascript"});
+            let url = URL.createObjectURL(blob);
+            let a = document.createElement("a");
+            a.href = url;
+            a.download = "dados.js";
+            a.click();
+
+            alert("Arquivo 'dados.js' gerado e baixado com sucesso! Agora basta arrastá-lo para o seu repositório no GitHub.");
         }
 
         async function salvarTudoNoSistema() {
             if (listaDados1Dia.length > 0) localStorage.setItem(`dados_1dia_sim${simAtual}`, JSON.stringify(listaDados1Dia));
             if (listaDados2Dia.length > 0) localStorage.setItem(`dados_2dia_sim${simAtual}`, JSON.stringify(listaDados2Dia));
             
-            await sincronizarComNuvemManual();
+            sincronizarComNuvemManual();
 
             document.getElementById("msg-sucesso").classList.remove("hidden");
             setTimeout(() => document.getElementById("msg-sucesso").classList.add("hidden"), 4000);
@@ -410,11 +407,11 @@
 
         function salvarConfigTRI() { carregarAuditoria(); }
 
-        async function salvarRedacao(nomeAluno, valor) {
+        function salvarRedacao(nomeAluno, valor) {
             let redacoes = JSON.parse(localStorage.getItem(`notas_redacao_sim${simAtual}`) || "{}");
             redacoes[normalizar(nomeAluno)] = parseFloat(valor) || 0;
             localStorage.setItem(`notas_redacao_sim${simAtual}`, JSON.stringify(redacoes));
-            await sincronizarComNuvemManual();
+            sincronizarComNuvemManual();
             carregarAuditoria();
         }
 
@@ -812,11 +809,11 @@
             document.getElementById("sim-resultado-nota").innerText = score.toFixed(1);
         }
 
-        async function salvarParametrosLabTRI() {
+        function salvarParametrosLabTRI() {
             salvarParametrosAreaAtual();
-            await sincronizarComNuvemManual();
+            sincronizarComNuvemManual();
             carregarAuditoria();
-            alert("Parâmetros da área salvos e sincronizados na nuvem com sucesso!");
+            alert("Parâmetros da área salvos e arquivo dados.js gerado com sucesso!");
             fecharModalTRI();
         }
 
@@ -865,14 +862,14 @@
             let file = event.target.files[0];
             if(!file) return;
             let reader = new FileReader();
-            reader.onload = async function(e) {
+            reader.onload = function(e) {
                 try {
                     let dadosBackup = JSON.parse(e.target.result);
                     for(let key in dadosBackup) {
                         localStorage.setItem(key, dadosBackup[key]);
                     }
-                    await sincronizarComNuvemManual();
-                    alert("Backup restaurado e sincronizado com sucesso!");
+                    sincronizarComNuvemManual();
+                    alert("Backup restaurado e arquivo dados.js gerado com sucesso!");
                     location.reload();
                 } catch(err) {
                     alert("Erro ao ler arquivo de backup.");
