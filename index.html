@@ -457,7 +457,7 @@
                 if (!reg) return { mark: 0, opt: '-' };
                 let opt = reg[`Q ${qNum} Options`] !== undefined ? reg[`Q ${qNum} Options`] : reg[`Q${qNum} Options`];
                 let mark = Number(reg[`Q ${qNum} Marks`] !== undefined ? reg[`Q ${qNum} Marks`] : 0);
-                return { opt: opt !== undefined ? opt : '-', mark };
+                return { opt: opt !== undefined && opt !== null && String(opt).trim() !== "" ? opt : '-', mark };
             }
 
             let cfg = obterConfigAreasSimulado(simAtual);
@@ -465,6 +465,7 @@
 
             if (!resAtual) return;
 
+            // 1º DIA (Q1 a Q90)
             if (reg1) {
                 for (let q = 1; q <= 90; q++) {
                     let area = q <= 45 ? 'ling' : 'hum';
@@ -479,6 +480,8 @@
                     } else if (dQ.opt !== '-') {
                         if (dQ.mark > 0) { statusBadge = '<span class="text-green-600 font-bold">Acertou</span>'; }
                         else { statusBadge = '<span class="text-red-500 font-bold">Errou</span>'; }
+                    } else {
+                        statusBadge = '<span class="text-gray-400">Não respondeu</span>';
                     }
 
                     let tr = document.createElement("tr");
@@ -488,11 +491,12 @@
             } else {
                 for (let q = 1; q <= 90; q++) {
                     let tr = document.createElement("tr");
-                    tr.innerHTML = `<td class="px-4 py-2 font-semibold text-gray-700">Q${q}</td><td class="px-4 py-2">-</td><td class="px-4 py-2 text-gray-400">Ausente</td>`;
+                    tr.innerHTML = `<td class="px-4 py-2 font-semibold text-gray-700">Q${q}</td><td class="px-4 py-2">-</td><td class="px-4 py-2 text-gray-400 font-bold">Ausente</td>`;
                     tabelaQuestoesHTML.appendChild(tr);
                 }
             }
 
+            // 2º DIA (Q91 a Q180)
             if (reg2) {
                 for (let qFile = 1; qFile <= 90; qFile++) {
                     let qReal = qFile + 90;
@@ -508,6 +512,8 @@
                     } else if (dQ2.opt !== '-') {
                         if (dQ2.mark > 0) { statusBadge2 = '<span class="text-green-600 font-bold">Acertou</span>'; }
                         else { statusBadge2 = '<span class="text-red-500 font-bold">Errou</span>'; }
+                    } else {
+                        statusBadge2 = '<span class="text-gray-400">Não respondeu</span>';
                     }
 
                     let tr = document.createElement("tr");
@@ -517,7 +523,7 @@
             } else {
                 for (let qReal = 91; qReal <= 180; qReal++) {
                     let tr = document.createElement("tr");
-                    tr.innerHTML = `<td class="px-4 py-2 font-semibold text-gray-700">Q${qReal}</td><td class="px-4 py-2">-</td><td class="px-4 py-2 text-gray-400">Ausente</td>`;
+                    tr.innerHTML = `<td class="px-4 py-2 font-semibold text-gray-700">Q${qReal}</td><td class="px-4 py-2">-</td><td class="px-4 py-2 text-gray-400 font-bold">Ausente</td>`;
                     tabelaQuestoesHTML.appendChild(tr);
                 }
             }
