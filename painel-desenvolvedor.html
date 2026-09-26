@@ -38,7 +38,7 @@
             <div class="flex items-center space-x-2">
                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
                 <span class="font-bold text-blue-900">Versão Ativa:</span>
-                <span id="dev-versao-sistema" class="font-mono bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-700 font-semibold">v3.4.3 (Completo com Antiduplicação)</span>
+                <span id="dev-versao-sistema" class="font-mono bg-white px-2 py-0.5 rounded border border-blue-200 text-blue-700 font-semibold">v3.4.5 (Completo com Acertos e Gabaritos)</span>
             </div>
             <span id="dev-ultima-atualizacao" class="text-gray-500 text-[11px]">Última Sincronização: --</span>
         </div>
@@ -166,6 +166,37 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+
+        <!-- GAVETA: AUDITORIA DE BOLETINS & PDFS BAIXADOS -->
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden mb-6">
+            <details class="group">
+                <summary class="flex justify-between items-center p-4 bg-gray-50 cursor-pointer font-bold text-gray-700 text-sm select-none">
+                    <span class="flex items-center gap-2">📂 Auditoria de Boletins & Relatórios PDF Baixados pelos Alunos</span>
+                    <span class="seta-gaveta text-lg font-mono">▼</span>
+                </summary>
+                <div class="p-4 border-t border-gray-200">
+                    <div class="flex justify-between items-center mb-3">
+                        <p class="text-xs text-gray-500">Histórico de acessos e downloads de boletins em PDF realizados pelos alunos no portal.</p>
+                        <button onclick="limparLogAuditoriaPDF()" class="bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1.5 rounded text-xs font-bold transition">🗑️ Limpar Histórico</button>
+                    </div>
+                    <div class="overflow-x-auto max-h-60 border rounded-lg">
+                        <table class="min-w-full divide-y divide-gray-200 text-xs">
+                            <thead class="bg-gray-100 sticky top-0">
+                                <tr class="text-left text-gray-600">
+                                    <th class="px-3 py-2">Data / Hora</th>
+                                    <th class="px-3 py-2">Turma</th>
+                                    <th class="px-3 py-2">Nome do Aluno</th>
+                                    <th class="px-3 py-2">Ação Realizada</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-log-pdf" class="divide-y divide-gray-200 bg-white">
+                                <tr><td colspan="4" class="px-3 py-3 text-center text-gray-400">Nenhum registro de download de PDF encontrado.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </details>
         </div>
     </div>
 
@@ -297,17 +328,18 @@
         let simAtual = "1";
         let listaDados1Dia = [];
         let listaDados2Dia = [];
-        const VERSAO_SISTEMA = "v3.4.3";
+        const VERSAO_SISTEMA = "v3.4.5";
 
         window.onload = function() {
             carregarListaSimulados();
             carregarAuditoria();
+            carregarLogAuditoriaPDF();
             atualizarBadgeVersaoPainel();
         };
 
         function atualizarBadgeVersaoPainel() {
             let ultimaPub = localStorage.getItem("dev_ultima_publicacao") || "Não publicada ainda";
-            document.getElementById("dev-versao-sistema").innerText = `${VERSAO_SISTEMA} (Completo com Antiduplicação)`;
+            document.getElementById("dev-versao-sistema").innerText = `${VERSAO_SISTEMA} (Completo com Acertos e Gabaritos)`;
             document.getElementById("dev-ultima-atualizacao").innerText = `Última Sincronização: ${ultimaPub}`;
         }
 
@@ -560,6 +592,7 @@
             }
 
             carregarAuditoria();
+            carregarLogAuditoriaPDF();
         }
 
         function carregarListaSimulados() {
@@ -810,6 +843,33 @@
             document.getElementById("stat-menor-nota").innerText = menor < 9999 ? menor.toFixed(1) : "0.0";
         }
 
+        function carregarLogAuditoriaPDF() {
+            let logs = JSON.parse(localStorage.getItem("log_downloads_pdf") || "[]");
+            const tbody = document.getElementById("tabela-log-pdf");
+            tbody.innerHTML = "";
+            if (logs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="px-3 py-3 text-center text-gray-400">Nenhum registro de download de PDF encontrado.</td></tr>`;
+                return;
+            }
+            logs.forEach(log => {
+                let tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td class="px-3 py-2 font-mono text-gray-600">${log.dataHora || "--"}</td>
+                    <td class="px-3 py-2 font-semibold text-gray-700">${log.turma || "--"}</td>
+                    <td class="px-3 py-2 font-medium text-blue-600">${log.nome || "--"}</td>
+                    <td class="px-3 py-2 text-gray-800">${log.acao || "Baixou Boletim PDF"}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function limparLogAuditoriaPDF() {
+            if(confirm("Deseja limpar todo o histórico de auditoria de downloads de PDF?")) {
+                localStorage.removeItem("log_downloads_pdf");
+                carregarLogAuditoriaPDF();
+            }
+        }
+
         function limparFiltrosTabela() {
             document.getElementById("filtro-nome").value = "";
             document.getElementById("filtro-turma").value = "TODAS";
@@ -1038,10 +1098,11 @@
             let res = calcularNotasAlunoDesenvolvedor(nome, turma, roll, simAtual);
             if (!res) return;
 
-            document.getElementById("insp-ling").innerText = res.ling.toFixed(1);
-            document.getElementById("insp-hum").innerText = res.hum.toFixed(1);
-            document.getElementById("insp-nat").innerText = res.nat.toFixed(1);
-            document.getElementById("insp-mat").innerText = res.mat.toFixed(1);
+            // EXIBE NOTA E QUANTIDADE DE ACERTOS NOS CARDS DE INSPEÇÃO
+            document.getElementById("insp-ling").innerHTML = `${res.ling.toFixed(1)} <span class="text-xs font-normal text-gray-500 block">(${res.acertosLing} acertos)</span>`;
+            document.getElementById("insp-hum").innerHTML = `${res.hum.toFixed(1)} <span class="text-xs font-normal text-gray-500 block">(${res.acertosHum} acertos)</span>`;
+            document.getElementById("insp-nat").innerHTML = `${res.nat.toFixed(1)} <span class="text-xs font-normal text-gray-500 block">(${res.acertosNat} acertos)</span>`;
+            document.getElementById("insp-mat").innerHTML = `${res.mat.toFixed(1)} <span class="text-xs font-normal text-gray-500 block">(${res.acertosMat} acertos)</span>`;
             document.getElementById("insp-red").innerText = `${res.red} pts`;
 
             let d1 = JSON.parse(localStorage.getItem(`dados_1dia_sim${simAtual}`) || "[]");
@@ -1062,11 +1123,23 @@
             tbody.innerHTML = "";
 
             let htmlQ = "";
-            function obterDadoInsp(reg, qNum) {
-                if (!reg) return { mark: 0, opt: '-' };
+            function obterDetalhesQuestaoInsp(reg, qNum) {
+                if (!reg) return { mark: 0, opt: '-', gabarito: '-' };
                 let opt = reg[`Q ${qNum} Options`] !== undefined ? reg[`Q ${qNum} Options`] : reg[`Q${qNum} Options`];
                 let mark = Number(reg[`Q ${qNum} Marks`] !== undefined ? reg[`Q ${qNum} Marks`] : 0);
-                return { opt: opt !== undefined && opt !== null && String(opt).trim() !== "" ? opt : '-', mark };
+                
+                // Tenta extrair o gabarito oficial da planilha (ex: Q1 Correct Answer, Correct Answer, etc.)
+                let gab = reg[`Q ${qNum} Correct Answer`] !== undefined ? reg[`Q ${qNum} Correct Answer`] : 
+                          (reg[`Q${qNum} Correct`] !== undefined ? reg[`Q${qNum} Correct`] : '-');
+                if (gab === '-' && reg["Correct Answers"]) {
+                    // Se o EvalBee exportar em formato específico
+                }
+                
+                return { 
+                    opt: opt !== undefined && opt !== null && String(opt).trim() !== "" ? opt : '-', 
+                    mark,
+                    gabarito: gab !== '-' && gab !== undefined ? gab : (mark > 0 ? opt : '-') // fallback amigável se gabarito não veio explícito na coluna
+                };
             }
 
             if (reg1) {
@@ -1074,9 +1147,9 @@
                     let area = q <= 45 ? 'ling' : 'hum';
                     let qLocal = q <= 45 ? q : q - 45;
                     let d = cfg[area]?.questoes?.[qLocal] || 'medio';
-                    let dQ = obterDadoInsp(reg1, q);
-                    let st = d === 'anulada' ? '<span class="text-orange-500 font-bold">Anulada</span>' : (dQ.mark > 0 ? '<span class="text-green-600 font-bold">Acertou</span>' : '<span class="text-red-500 font-bold">Errou</span>');
-                    htmlQ += `<tr><td class="px-4 py-2 font-semibold">Q${q}</td><td class="px-4 py-2 font-mono">${dQ.opt}</td><td class="px-4 py-2">-</td><td class="px-4 py-2">${st}</td></tr>`;
+                    let det = obterDetalhesQuestaoInsp(reg1, q);
+                    let st = d === 'anulada' ? '<span class="text-orange-500 font-bold">Anulada</span>' : (det.mark > 0 ? '<span class="text-green-600 font-bold">Acertou</span>' : '<span class="text-red-500 font-bold">Errou</span>');
+                    htmlQ += `<tr><td class="px-4 py-2 font-semibold">Q${q}</td><td class="px-4 py-2 font-mono">${det.opt}</td><td class="px-4 py-2 font-mono font-bold text-gray-700">${det.gabarito}</td><td class="px-4 py-2">${st}</td></tr>`;
                 }
             }
             if (reg2) {
@@ -1084,9 +1157,9 @@
                     let qReal = qF + 90;
                     let area = qF <= 45 ? 'nat' : 'mat';
                     let d = cfg[area]?.questoes?.[qF] || 'medio';
-                    let dQ2 = obterDadoInsp(reg2, qF);
-                    let st2 = d === 'anulada' ? '<span class="text-orange-500 font-bold">Anulada</span>' : (dQ2.mark > 0 ? '<span class="text-green-600 font-bold">Acertou</span>' : '<span class="text-red-500 font-bold">Errou</span>');
-                    htmlQ += `<tr><td class="px-4 py-2 font-semibold">Q${qReal}</td><td class="px-4 py-2 font-mono">${dQ2.opt}</td><td class="px-4 py-2">-</td><td class="px-4 py-2">${st2}</td></tr>`;
+                    let det2 = obterDetalhesQuestaoInsp(reg2, qF);
+                    let st2 = d === 'anulada' ? '<span class="text-orange-500 font-bold">Anulada</span>' : (det2.mark > 0 ? '<span class="text-green-600 font-bold">Acertou</span>' : '<span class="text-red-500 font-bold">Errou</span>');
+                    htmlQ += `<tr><td class="px-4 py-2 font-semibold">Q${qReal}</td><td class="px-4 py-2 font-mono">${det2.opt}</td><td class="px-4 py-2 font-mono font-bold text-gray-700">${det2.gabarito}</td><td class="px-4 py-2">${st2}</td></tr>`;
                 }
             }
             tbody.innerHTML = htmlQ;
