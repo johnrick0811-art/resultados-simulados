@@ -1,4 +1,4 @@
-// dados.js - Atualizado em: 2026-09-26T11:29:43.950Z
+// dados.js - Atualizado em: 2026-09-26T11:29:50.603Z
 window.SISTEMA_DADOS_SIMULADOS = {
     "status": "ativo",
     "localStorageBackup": {
